@@ -1,0 +1,6 @@
+#apt-get install exuberant-ctags
+
+ctags -R .
+
+#Add the following to ~/.vimrc
+#set tags=tags;/

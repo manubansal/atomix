@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<device id="NYQUIST" partnum="NYQUIST" HW_revision="1" XML_version="2" desc="NYQUIST" description="NYSH">
+  <processors>
+    <instance XML_version="1.2" desc="IcePick_D" href="routers/icepick_d.xml" id="IcePick_D_0" xml="icepick_d.xml" xmlpath="routers" />
+    <router HW_revision="1.0" XML_version="1.2" description="ICEPick_D Router" id="IcePick_D_0" isa="ICEPICK_D">
+      <subpath id="subpath_0">
+        <property Type="numericfield" Value="0x1" id="Port Number" />
+        <instance XML_version="1.2" desc="C66xx_0" href="cpus/c66xx.xml" id="C66xx_0" xml="c66xx.xml" xmlpath="cpus" />
+      </subpath>
+      <subpath id="subpath_1">
+        <property Type="numericfield" Value="0x2" id="Port Number" />
+        <instance XML_version="1.2" desc="C66xx_1" href="cpus/c66xx.xml" id="C66xx_1" xml="c66xx.xml" xmlpath="cpus" />
+      </subpath>
+      <subpath id="subpath_2">
+        <property Type="numericfield" Value="0x3" id="Port Number" />
+        <instance XML_version="1.2" desc="C66xx_2" href="cpus/c66xx.xml" id="C66xx_2" xml="c66xx.xml" xmlpath="cpus" />
+      </subpath>
+      <subpath id="subpath_3">
+        <property Type="numericfield" Value="0x4" id="Port Number" />
+        <instance XML_version="1.2" desc="C66xx_3" href="cpus/c66xx.xml" id="C66xx_3" xml="c66xx.xml" xmlpath="routers" />
+      </subpath>
+      <subpath desc="DAP" id="subpath_4">
+        <property Type="numericfield" Value="0x5" id="Port Number" />
+        <instance XML_version="1.2" desc="CS_DAP_DebugSS" href="routers/cs_dap.xml" id="CS_DAP_0" xml="cs_dap.xml" xmlpath="routers" />
+      </subpath>
+    </router>
+  </processors>
+</device>

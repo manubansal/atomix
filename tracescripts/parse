@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+cmd=$1
+tf=$2
+shift; shift
+tf1=$tf.1
+cat $tf | grep "DNUM .* id .* ts" > $tf1
+pyparse $cmd $tf1 $@

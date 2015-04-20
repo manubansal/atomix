@@ -1,0 +1,122 @@
+#!/usr/bin/python
+
+import sys, os
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import numpy as np
+import pdb
+import operator
+import pickle
+from math import *
+import imp
+
+from pyparse_preproc import *
+from pyparse_atoms import *
+from pyparse_axns import *
+from pyparse_states import *
+from pyparse_util import *
+
+from plot_atoms import *
+from plot_states import *
+
+
+
+  
+def main():
+  cmd = sys.argv[1]
+  tf = sys.argv[2]
+  print 'Parsing ', tf, ' for', cmd
+
+
+  if cmd == 'jst':	#joint plot for states
+    tfst = sys.argv[3]
+    plot_joint_states(tf, tfst)
+
+  if cmd == 'st':	#states
+    state_profiling_table_file = sys.argv[3]
+    confFile = sys.argv[4]
+    confm = imp.load_source('jj', confFile)
+    conf = confm.conf
+    ddtup = preproc(tf)
+    alldd, allwins, waitwins, alldd_w, trdata = parse_states('st',\
+    	tf, ddtup, state_profiling_table_file, conf)
+    plot_states(tf, alldd, state_profiling_table_file, waitwins, conf, alldd_w, trdata)
+
+  if cmd == 'st-detailed':	#states
+    state_profiling_table_file = sys.argv[3]
+    confFile = sys.argv[4]
+    confm = imp.load_source('jj', confFile)
+    conf = confm.conf
+    ddtup = preproc(tf)
+    alldd, allwins, waitwins, alldd_w, trdata = parse_states('st-detailed',\
+    	tf, ddtup, state_profiling_table_file, conf)
+    plot_states(tf, alldd, state_profiling_table_file, waitwins, conf, alldd_w, trdata)
+    #plot_tail_symbol_stats(tf, allwins, conf)
+
+  if cmd == 'stax':	#states and axns timestamps
+    (ddtup_st, ddtup_ax) = preproc_stax(tf)
+
+    alldd, allwins = parse_states(tf, ddtup_st)
+    plot_states(tf, alldd, state_profiling_table_file)
+    plot_tail_symbol_stats(tf, allwins, conf)
+
+    axn_stats_sorted, axn_labels, axn_stats_norm, all_durs, axn_labels_dict = parse_axns(tf, ddtup_ax)
+    plot_axns(tf, axn_stats_sorted, axn_labels, axn_stats_norm)
+    plot_axn_timeseries(tf, axn_stats_norm, all_durs, axn_labels_dict)
+
+
+  if cmd == 'ax':	#actions
+    ddtup = preproc(tf)
+    axn_stats_sorted, axn_labels, axn_stats_norm, all_durs, axn_labels_dict = parse_axns(tf, ddtup)
+    plot_axns(tf, axn_stats_sorted, axn_labels, axn_stats_norm)
+    plot_axn_timeseries(tf, axn_stats_norm, all_durs, axn_labels_dict)
+
+  if cmd == 'at':	#atoms for the full call from the action with iteratively increasing ts ids
+    atom_profiling_table_file = sys.argv[3]
+    confFile = sys.argv[4]
+    confm = imp.load_source('jj', confFile)
+    conf = confm.conf
+    ddtup = preproc(tf)
+    atom_stats_sorted, atom_labels, atom_stats_norm, all_durs, atom_labels_dict \
+    	= parse_atoms(tf, ddtup, False, False, atom_profiling_table_file, "", conf)
+    plot_atoms(tf, atom_stats_sorted, atom_labels, atom_stats_norm, conf)
+    plot_atom_timeseries(tf, atom_stats_norm, all_durs, atom_labels_dict, conf)
+
+  if cmd == 'atii':	#atoms for the internal implementation with matched ids for timestamp pair
+    confFile = sys.argv[4]
+    confm = imp.load_source('jj', confFile)
+    conf = confm.conf
+    ddtup = preproc(tf)
+    atom_profiling_table_file = sys.argv[3]
+    more_atomids = conf['more_atomids']
+    print more_atomids
+    if len(sys.argv) >= 6:
+      atom_classification_table_file = sys.argv[5]
+    else:
+      atom_classification_table_file = ""
+    atom_stats_sorted, atom_labels, atom_stats_norm, all_durs, atom_labels_dict, atid_tseqs \
+    	= parse_atoms(tf, ddtup, True, True, atom_profiling_table_file, "", conf, atom_classification_table_file)
+    plot_atoms(tf, atom_stats_sorted, atom_labels, atom_stats_norm)
+    plot_atom_timeseries(tf, atom_stats_norm, all_durs, atom_labels_dict, more_atomids)
+    plot_atom_tseqs(tf, atid_tseqs, atom_labels_dict)
+
+  if cmd == 'ati':	#atom internals with four timestamps from within the profile atoms to isolate fifo get, ii, fifo done parts
+    ddtup = preproc(tf)
+    atomi_stats, atomi_durs, atomi_labels_dict = parse_atomis(tf, ddtup) 
+    plot_atomis(tf, atomi_stats, atomi_labels_dict, atomi_durs)
+    #plot_atomi_timeseries(tf, atomi_durs, atomi_labels_dict)
+
+  if cmd == 'attss':	#total atom time spent statistics
+    markin = sys.argv[3]
+    markout = sys.argv[4]
+    n_runs, run_lengths, dd_runs, ddtup = preproc_runs(tf, markin, markout)
+    print 'n_runs:', n_runs
+    print 'run_lengths:'
+    for r in run_lengths:
+      print r
+    parse_time_spent(tf, ddtup, dd_runs) 
+    #plot_atomis(tf, atomi_stats, atomi_labels_dict, atomi_durs)
+
+if __name__ == "__main__":
+  main()

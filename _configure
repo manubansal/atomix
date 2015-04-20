@@ -1,0 +1,4 @@
+#!/bin/bash
+export PATH=$PATH:${ATOMIX_ROOT_LINUX_STYLE}/r2cmplr
+CONFIG_SITE=${ATOMIX_ROOT_LINUX_STYLE}/config.site.debug CC="_cl6x" RANLIB="_ranlib" ${ATOMIX_ROOT_LINUX_STYLE}/configure -build i686-pc-linux-gnu --host nyquist ATOMIX_INSTALL_DIR=${ATOMIX_ROOT}/build $@
+#CONFIG_SITE=${ATOMIX_ROOT_LINUX_STYLE}/config.site.debug CC="_cl6x" RANLIB="_ranlib" ${ATOMIX_ROOT_LINUX_STYLE}/configure -build i686-pc-linux-gnu --host 6638k2k $@

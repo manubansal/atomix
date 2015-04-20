@@ -1,0 +1,123 @@
+" Vim syntax file
+" Language: Open Radio
+" Maintainer: Manu Bansal
+" Latest Revision: Sept 09, 2011
+
+if exists("b:current_syntax")
+  finish
+endif
+
+syn keyword orTodo contained TODO FIXME XXX NOTE
+syn match orComment "#.*$" contains=orTodo
+
+syn match orSep ":" contained
+
+" Regular int like number with - + or nothing in front
+syn match orNumber '[^\h]\d\+' 
+syn match orNumber '[^\h][-+]\d\+' 
+syn match orNumber '[^\h]\d\+[MmGgKku]' 
+syn match orNumber '[^\h][-+]\d\+[MmGgKku]' 
+syn match orNumber '[^\h]\d\+ULL' 
+syn case ignore
+syn match orNumber  display "[\H]0x\x\+\(u\=l\=\|lu\)"
+syn match orNumber  display "[\H]0x\x\+"
+syn case match
+
+
+" Floating point number with decimal no E or e (+,-)
+syn match orNumber '[^\h]\d\+\.\d*' 
+syn match orNumber '[^\h][-+]\d\+\.\d*' 
+
+" Floating point like number with E and no decimal point (+,-)
+syn match orNumber '[^\h][-+]\=\d[[:digit:]]*[eE][\-+]\=\d\+' 
+syn match orNumber '[^\h]\d[[:digit:]]*[eE][\-+]\=\d\+' 
+
+" Floating point like number with E and decimal point (+,-)
+syn match orNumber '[^\h][-+]\=\d[[:digit:]]*\.\d*[eE[\-+]\=\d\+' 
+syn match orNumber '[^\h]\d[[:digit:]]*\.\d*[eE[\-+]\=\d\+' 
+syn match orNumber '[^\h][-+]\=\d[[:digit:]]*\.\d*[MmGgKku]' 
+syn match orNumber '[^\h]\d[[:digit:]]*\.\d*[MmGgKku]' 
+
+syn region orString start='"' end='"' contained
+syn region orDesc start='"' end='"'
+
+"syn match orHip '\d\{1,6}' nextgroup=orString
+"syn region orDescBlock start="{" end="}" fold transparent contains=ALLBUT,orHip,orDesc
+
+"syn keyword orBlockCmd RA Dec Distance AbsMag nextgroup=orNumber
+"syn keyword orBlockCmd SpectralType nextgroup=orString
+
+"syn keyword langKeywords create compose define import from if then else elseif transitionto do by after monitor as
+"syn keyword deprecatedKeywords after
+"syn keyword langTypes constant datasource datasink flowgraph
+
+
+"syn keyword langTypes atom action state fifo
+"syn match orAtomDef // nextgroup=orSep skipwhite
+"syn match orAtomDef // nextgroup=orSep skipwhite
+"orSep skipwhite orIdentifier skipwhite orNumber
+"syn keyword langTypes atom nextgroup=orAtomDef
+
+"syn region orDescBlock start="{" end="}" fold transparent contains=ALLBUT,orHip,orDesc
+"syn match orIdentifier '\h\+[\h\d]*'
+"syn region orFunctionParans start="(" end=")" contains=orIdentifier
+""""syn match orArguments '([^)]*)' contains=orIdentifier,orFunction,orField,orOperators
+"syn match orIdentifier '[_a-zA-Z][_a-zA-Z0-9]*' contained 
+"syn match orCoreNumber ":" contained nextgroup=orNumber skipwhite
+"syn match orAtomType '[_a-zA-Z][_a-zA-Z0-9]*' containedin=orAtomName nextgroup=orCoreNumber skipwhite
+syn match orNumberField ":" contained nextgroup=orNumber skipwhite
+syn match orAtomType '[_a-zA-Z][_a-zA-Z0-9]*' containedin=orAtomNameField nextgroup=orNumberField skipwhite
+syn match orAtomTypeField ":" containedin=orAtomName nextgroup=orAtomType skipwhite
+syn match orAtomName '[_a-zA-Z][_a-zA-Z0-9]*' contained nextgroup=orAtomTypeField skipwhite
+"syn match orType '[_a-zA-Z][_a-zA-Z0-9]*' contained 
+"syn match orFunction '[_a-zA-Z][_a-zA-Z0-9]*' skipwhite nextgroup=orArguments
+""""syn match orFunction "\<\h\w*\>\(\s\|\n\)*("me=e-1
+"syn match orFunction "\(::\)\@<=\<\h\w*\>"
+"syn match orFunction "\(<\(\s|\n\)*\)\@<=\<\h\w*\>\(\(\s|\n\)*>\)\@<="
+"syn match orFunction "\(<\)\@<=\<\h\(\w\|_\)*\>\(>\)\@<="
+""""syn match orFunction "<\<\h\(\w\|_\)*\>>"
+"syn match orBraces display "[()]"
+syn match orBraces display "{}"
+syn match orOperators "->\|<-\|<\->|<|>\|==\|<=\|>=\|:=:\|||\|&&\|!=\|<<\|>>"
+syn match orOperators "+\|-\|*\|/"
+"syn match orOperators ":\|;"
+"syn match orOperators "+\|*"
+"syn match orField "\(\<\h\(\w\|_\)*\>\.\)\@<=\<\h\(\w\|_\)*\>" contained display
+
+"syn keyword langKeywords wire statep statei
+syn keyword hintOrSanityKeywords conf typehint null noaxn
+syn keyword hintOrSanityKeywords sin
+"syn match orSin "sin" contained
+syn match orSin "sin" contained nextgroup=orSep,orNumber skipwhite
+"syn keyword langKeywords atom orSep orIdentifier orSep orType orSep orNumber skipwhite
+"syn keyword langKeywords atom /:/ nextgroup=orIdentifier,orSep,orType,orSep,orNumber skipwhite
+syn keyword langKeywords atom orSep nextgroup=orAtomName skipwhite
+"syn match orIdentifierList contained 
+syn keyword langKeywords wire nextgroup=orSep,orIdentifier,orSep,orIdentifierList skipwhite
+syn keyword langKeywords fifo nextgroup=orSep,orIdentifier,orSep,orNumber,orSep,orSin skipwhite
+
+let b:current_syntax = "or"
+
+hi def link orTodo        Todo
+hi def link orComment     Comment
+"hi def link orBlockCmd    Statement
+
+"manu
+hi def link langKeywords  Statement
+hi def link langTypes     Type
+"hi def link orType	  Type
+hi def link orAtomType	  Type
+"hi def link orIdentifier  Identifier
+hi def link orAtomName  Identifier
+"hi def link orFunction    Function
+hi def link orField 	  Function
+
+"hi def link orHip         Type
+"hi def link orString      Constant
+"hi def link orDesc        PreProc
+hi def link orNumber      Constant
+hi def link orBraces	  Delimiter
+hi def link orOperators   Operator
+hi def link orSep	  Delimiter
+hi def link hintOrSanityKeywords PreProc
+hi def link deprecatedKeywords Todo

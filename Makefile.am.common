@@ -1,0 +1,156 @@
+AR=ar6x
+ARFLAGS="r"
+
+CFLAGS+=\
+  -I"${CG_TOOL_ROOT_WIN}/include" \
+  -I"${CG_TOOL_ROOT_WIN}/lib" \
+  -I"${ATOMIX_ROOT}" \
+  -I"${CSL_ROOT}" \
+  -I"${DSPLIB_ROOT}/packages/" \
+  -I"${DSPLIB_ROOT}/packages/ti/dsplib" \
+  -I"${IQMATH_ROOT}/include" \
+  -I"${UNITY_ROOT}/src"		
+
+CFLAGS+=--CMPLR_FLAGS_FILE "`_cygpath -m $(ATOMIX_ROOT_VAL)/cmplrflags.cmd`"
+
+CFLAGS+=-DALLCORE 
+CFLAGS+=-D_TMS320C6X
+#CFLAGS+=--printf_support=full
+#CFLAGS+=-DENABLE_LIB_RUN_TIME_MEASUREMENT	#for debug mode runtime measurement
+
+CFLAGS.TS_FIFO_WAIT.none=
+#CFLAGS.TS_FIFO_WAIT.atii=
+CFLAGS.TS_FIFO_WAIT.atii=-DTS_FIFO_WAIT_I
+#CFLAGS.TS_FIFO_WAIT.st=-DTS_FIFO_WAIT
+#CFLAGS.TS_FIFO_WAIT.st=
+CFLAGS.TS_FIFO_WAIT.st=-DTS_FIFO_WAIT_I
+CFLAGS+=${CFLAGS.TS_FIFO_WAIT.${TIMESTAMPCONF}}
+
+#CFLAGS+=-O3					#code optimization
+CFLAGS.OPTIMIZATIONBYDEBUGLEVEL.0=-O3
+CFLAGS.OPTIMIZATIONBYDEBUGLEVEL.1=-O3
+CFLAGS.OPTIMIZATIONBYDEBUGLEVEL.2=
+CFLAGS.OPTIMIZATIONBYDEBUGLEVEL.3=
+CFLAGS+=${CFLAGS.OPTIMIZATIONBYDEBUGLEVEL.${DEBUGLEVEL}}
+
+#for code coverage information
+#CFLAGS+=--gen_profile_info
+
+
+CFLAGS+=-DDEBUGLEVEL=${DEBUGLEVEL}
+
+#CFLAGS+=-DSNRBER
+#CFLAGS.SNRBER.yes=-DSNRBER -DSNRBER_PKTDATAOUTDDR
+CFLAGS.SNRBER.yes=-DSNRBER 
+CFLAGS.SNRBER.no=
+CFLAGS+=${CFLAGS.SNRBER.${SNRBERDEFINED}}
+
+CFLAGS.INPTRACEMODE.lc=-DLARGE_TRACE_COMPILED -DLARGE_TRACE
+CFLAGS.INPTRACEMODE.lm=-DLARGE_TRACE_MANLOADED -DLARGE_TRACE
+CFLAGS.INPTRACEMODE.s=
+CFLAGS+=${CFLAGS.INPTRACEMODE.${INPTRACEMODEVAL}}
+
+CFLAGS+=--silicon_version=6600
+LDFLAGS+=--silicon_version=6600
+
+#Note: for -mv6600 (--silicon_version=6600), EABI (ELF ABI) 
+#is the default, not the COFF ABI.
+
+#CFLAGS+=--abi=eabi
+#LDFLAGS+=--abi=eabi
+CFLAGS+=--no_const_clink
+LDFLAGS+=--no_const_clink
+
+#CFLAGS+=--abi=coffabi
+#LDFLAGS+=--abi=coffabi
+#CFLAGS+=--disable_clink		#only with coffabi
+#LDFLAGS+=--disable_clink		#only with coffabi
+
+#CFLAGS+=-DUSE_ASSERT				#force asserts even if debug mode is off (debug off => no printf's, no asserts)
+#CFLAGS+=--zero_init=off			#turn off zero initialization of global and static data to save time on the simulator
+#CFLAGS+=-DENABLE_TIMING
+
+#CFLAGS+=--trampolines=off
+#LDFLAGS+=--trampolines=off
+
+#CFLAGS+=--gen_profile_info
+#CFLAGS+=--gen_func_subsections=on
+
+
+#test1
+#default configuration -- all of L1D and L1P are caches
+CFLAGS.memconf1=-DL1P_SRAM_ZERO -DL1D_SRAM_ZERO
+LDFLAGS.memconf1=-DL1P_SRAM_ZERO -DL1D_SRAM_ZERO
+
+#test2
+CFLAGS.memconf2=-DL1P_SRAM_ZERO -DL1D_DISABLE
+LDFLAGS.memconf2=-DL1P_SRAM_ZERO -DL1D_DISABLE
+
+#test3
+CFLAGS.memconf3=-DL1P_DISABLE -DL1D_DISABLE
+LDFLAGS.memconf3=-DL1P_DISABLE -DL1D_DISABLE
+
+#test4
+CFLAGS.memconf4=-DL1P_SRAM_32K -DL1D_SRAM_32K
+LDFLAGS.memconf4=-DL1P_SRAM_32K -DL1D_SRAM_32K
+
+#test5 (stack allocated into L2TEXT)
+CFLAGS.memconf5=-DL1P_SRAM_ZERO -DL1D_SRAM_32K
+LDFLAGS.memconf5=-DL1P_SRAM_ZERO -DL1D_SRAM_32K
+
+#test6
+CFLAGS.memconf6=-DL1P_SRAM_ZERO -DL1D_SRAM_28K
+LDFLAGS.memconf6=-DL1P_SRAM_ZERO -DL1D_SRAM_28K
+
+#test7
+#smallest possible non-zero window of L1D cache (4K) 
+#stack is in L2_TEXT, fifo data structures are in L1DSRAM
+CFLAGS.memconf7=-DL1P_SRAM_ZERO -DL1D_SRAM_28K
+LDFLAGS.memconf7=-DL1P_SRAM_ZERO -DL1D_SRAM_28K
+#CFLAGS+=-DFORCE_NO_L1D_SRAM_ALLOC
+#LDFLAGS+=-DFORCE_NO_L1D_SRAM_ALLOC
+
+#test8 (stack allocated into L1D)
+CFLAGS.memconf8=-DL1P_SRAM_ZERO -DL1D_SRAM_32K -DSTACK_IN_L1D_SRAM
+LDFLAGS.memconf8=-DL1P_SRAM_ZERO -DL1D_SRAM_32K -DSTACK_IN_L1D_SRAM
+
+#test9 
+#smallest possible non-zero L1DSRAM (16K)
+#stack is in L1DSRAM, fifo data structures are in L1DSRAM
+CFLAGS.memconf9=-DL1P_SRAM_ZERO -DL1D_SRAM_16K -DSTACK_IN_L1D_SRAM
+LDFLAGS.memconf9=-DL1P_SRAM_ZERO -DL1D_SRAM_16K -DSTACK_IN_L1D_SRAM
+
+
+CFLAGS+=${CFLAGS.${MEMCONF}}
+LDFLAGS+=${LDFLAGS.${MEMCONF}}
+CFLAGS+=-T${TIMESTAMPCONF}
+
+CONFIG_ID=${MEMCONF}.d${DEBUGLEVEL}.t${TIMESTAMPCONF}
+EXEEXT=.${CONFIG_ID}.out
+
+SYSLOG_DIR=`_cygpath ${top_builddir}`
+CFLAGS+=-DSYS_LOG_TO_FILE  -DSYS_LOG_FILE=\\\"${SYSLOG_DIR}/syslog.txt\\\"
+
+#This works only with CCS because of CIO breakpoints mechanism that only CCS
+#knows how to handle.  CIO breakpoint handling is needed for any CIO function
+#(printf, fprintf...) to work correctly.  esh doesn't know how to handle it.
+#So this won't work if esh is used without CCS gui.  Also, fprintf is very
+#slow compared to printf.
+#CFLAGS+=-DLOG_CONSOLE   -DLOG_STDOUT_FILE_PREFIX=\\\"/tmp/stdout\\\"
+
+
+CFLAGS+=--mem_model:data=far
+
+
+MEMORYMAP_FILE.evm6474=linker_memorymap_evm6474.cmd
+MEMORYMAP_FILE.nyquist=linker_memorymap_nyquist.cmd
+MEMORYMAP_FILE.evm6670=linker_memorymap_evm6670.cmd
+MEMORYMAP_FILE.6638k2k=linker_memorymap_nyquist.cmd
+MEMORYMAP_FILE.=linker_memorymap_nyquist.cmd
+MEMORYMAP_FILE=${MEMORYMAP_FILE.${HOST}}
+
+CFLAGS.evm6474=
+CFLAGS.nyquist=
+CFLAGS.evm6670=
+CFLAGS.6638k2k=-DDEVICE_K2K
+CFLAGS+=${CFLAGS.${HOST}}

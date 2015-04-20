@@ -1,0 +1,5 @@
+
+#allow oros directory to be a reference path for convenient 
+#header sharing across different modules of the oros subtree.
+#CFLAGS+=-I"$(srcdir)"
+CFLAGS+=-I"`_cygpath -m $(top_srcdir)/oros`" -DNDEBUG -O3

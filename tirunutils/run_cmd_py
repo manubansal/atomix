@@ -1,0 +1,49 @@
+#!/bin/bash
+
+#jython oros.py -c ../targetconfs/evmbe6616_xds560v2_onechip_memconf1.ccxml -p ../../orsys-build-debug.memconf1.none/orilib_unittests/check_ORILIB_PacketSearch_Align.memconf1.none.out
+#python oros.py -c ../targetconfs/evmbe6616_xds560v2_onechip_memconf1.ccxml -p ../../orsys-build-debug.memconf1.none/orilib_unittests/check_ORILIB_PacketSearch_Align.memconf1.none.out
+
+echo $DEBUGSERVER_ROOT
+
+
+JYTHONPATH=$CCS_ROOT/ccs_base/DebugServer/packages/ti/dss/java/js.jar:$JYTHONPATH
+JYTHONPATH=$CCS_ROOT/ccs_base/DebugServer/packages/ti/dss/java/dss.jar:$JYTHONPATH
+JYTHONPATH=$CCS_ROOT/ccs_base/DebugServer/packages/ti/dss/java/com.ti.ccstudio.scripting.environment_3.1.0.jar:$JYTHONPATH
+JYTHONPATH=$CCS_ROOT/ccs_base/DebugServer/packages/ti/dss/java/com.ti.debug.engine_1.0.0.jar:$JYTHONPATH
+JYTHONPATH=$CCS_ROOT/ccs_base/dvt/scripting/dvt_scripting.jar:$JYTHONPATH
+
+export JYTHONPATH
+
+# Use product JRE
+if [ -d "$DEBUGSERVER_ROOT/../jre" ]; then
+  export JAVA_HOME=$DEBUGSERVER_ROOT/../jre
+  export PATH=$DEBUGSERVER_ROOT/../jre/bin:$PATH
+elif [ -d "$DEBUGSERVER_ROOT/../eclipse/jre" ]; then
+  export JAVA_HOME=$DEBUGSERVER_ROOT/../eclipse/jre
+  export PATH=$DEBUGSERVER_ROOT/../eclipse/jre/bin:$PATH
+elif [ -d "$DEBUGSERVER_ROOT/../../eclipse/jre" ]; then
+  export JAVA_HOME=$DEBUGSERVER_ROOT/../../eclipse/jre
+  export PATH=$DEBUGSERVER_ROOT/../../eclipse/jre/bin:$PATH
+fi
+
+
+
+#JYTHONJAR=/home/manub/jython/jython.jar
+#CACHEDIR="/home/manub/jython/cache"
+
+JYTHONJAR=/home/manub/jython2.5.3/jython.jar
+CACHEDIR="/home/manub/jython2.5.3/cache"
+
+#option for caching and, more importantly, turning on java package scanning
+#-Dpython.cachedir.skip=false -Dpython.cachedir=DESIRED CACHE PATH
+COPT="-Dpython.cachedir.skip=false -Dpython.cachedir=$CACHEDIR"
+
+
+#java -jar /home/manub/jython/jython.jar oros.py -h
+#java -jar $JYTHONJAR oros.py -c ../targetconfs/evmbe6616_xds560v2_onechip_memconf1.ccxml -p ../../orsys-build-debug.memconf1.none/orilib_unittests/check_ORILIB_PacketSearch_Align.memconf1.none.out
+#JYTHONPATH=$CLASSPATH java -jar /home/manub/jython/jython.jar 
+#JYTHONPATH=$CLASSPATH java $COPT -jar /home/manub/jython/jython.jar 
+#java $COPT -jar /home/manub/jython/jython.jar 
+#`java $COPT -jar $JYTHONJAR oros.py -c ../targetconfs/evmbe6616_xds560v2_onechip_memconf1.ccxml -p ../../orsys-build-debug.memconf1.none/orilib_unittests/check_ORILIB_PacketSearch_Align.memconf1.none.out
+java $COPT -jar $JYTHONJAR breakpoint.py
+#jython breakpoint.py

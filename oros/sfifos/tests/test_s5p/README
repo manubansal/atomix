@@ -1,0 +1,38 @@
+Scenario s5'
+============
+
+Algorithmic flowgraph:
+X --> AS --> Y 
+X produces data (source), AS is a stateful block that transforms data, Y consumes data (sink).
+
+
+Schedule:
+C1	C2
+----------
+X1	X2
+A1	A2
+T1	T2
+Y1	Y2
+
+
+Data flowgraph:
+---------------
+
+x1		            x2
+|                            |
+*                            *
+ff1	ff5        ff7      ff3
+|	| *        * |       |  
+|   -----  \      /  -----   |  
+|  /        t2   /        \  |  
+* *          \  /          * *
+as1           \/           as2 
+* *           /\           * *
+|  \         /  \         /  |  
+|   -----   t1   \   -----   |  
+|	|  /      \  |       |  
+*	* /        \ *       *  
+ff2	ff6       ff8	    ff4 
+|                            |
+*                            *
+y1                           y2

@@ -1,0 +1,13 @@
+Scenario s2
+===========
+
+Algorithmic flowgraph:
+X --> Y 
+X produces data (source), Y consumes data (sink).
+
+
+Schedule:
+C1	C2
+----------
+X1	X2
+Y1	Y2

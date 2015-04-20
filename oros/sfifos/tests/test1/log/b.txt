@@ -1,0 +1,42 @@
+[C66xx_01] f1     = 00801970
+[C66xx_01] f1->fr = 12801970
+[C66xx_01] f1 bufferSizeInBytes: 4
+[C66xx_01] f1 nBuffersInFifo   : 3
+[C66xx_01] f1 locatedOnCoreId  : 1
+												[C66xx_02] f1     = 00801970
+												[C66xx_02] f1->fr = 11801970
+												[C66xx_02] f1 bufferSizeInBytes: 4
+												[C66xx_02] f1 nBuffersInFifo   : 3
+												[C66xx_02] f1 locatedOnCoreId  : 2
+												[C66xx_02] doCore2
+												[C66xx_02] No read buffer available, waiting...
+[C66xx_01] doCore1
+[C66xx_01] doCore1: iteration 0
+[C66xx_01] Write buffer available
+[C66xx_01] A: Filled buffer seq no.  0
+[C66xx_01] Write buffer available
+[C66xx_01] T: Transfering 1 words from src 0x118019a8 to dst 0x128019a8
+[C66xx_01] doCore1: iteration 1
+[C66xx_01] Write buffer available
+[C66xx_01] A: Filled buffer seq no.  1
+[C66xx_01] Write buffer available
+[C66xx_01] T: Transfering 1 words from src 0x118019ac to dst 0x128019ac
+[C66xx_01] doCore1: iteration 2
+[C66xx_01] Write buffer available
+[C66xx_01] A: Filled buffer seq no.  2
+[C66xx_01] Write buffer available
+[C66xx_01] T: Transfering 1 words from src 0x118019b0 to dst 0x128019b0
+[C66xx_01] doCore1: iteration 3
+[C66xx_01] Write buffer available
+[C66xx_01] A: Filled buffer seq no.  3
+[C66xx_01] No write buffer available, waiting...
+												[C66xx_02] B: Read   buffer seq no.  0
+												[C66xx_02] B: Read   buffer seq no.  1
+												[C66xx_02] B: Read   buffer seq no.  2
+												[C66xx_02] No read buffer available, waiting...
+[C66xx_01] Write buffer available
+[C66xx_01] T: Transfering 1 words from src 0x118019a8 to dst 0x128019a8
+[C66xx_01] Assertion failed, (f->nF + f->nE + f->nW + f->nR == f->nBuffersInFifo), file O:/workspace_v5_1/openradio/orsys/orlib/orlib_sfifos/fifoManager.c, line 116
+												[C66xx_02] B: Read   buffer seq no.  3
+												[C66xx_02] No read buffer available, waiting...
+

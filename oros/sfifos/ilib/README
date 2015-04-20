@@ -1,0 +1,7 @@
+Block library for sfifos modules based on the new structure with implementation-only contains:
+
+BlockTR: Transfer-over-cpu block
+BlockTD: Transfer-over-dma block
+
+__BlockTD__.* are hand-written
+__BlockTR__.* are auto-generated

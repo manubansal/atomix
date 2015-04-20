@@ -1,0 +1,31 @@
+
+# Atomix project, atoms.or, TODO: insert summary here
+# Copyright (c) 2015 Stanford University
+# Released under the Apache License v2.0. See the LICENSE file for details.
+# Author(s): Manu Bansal
+
+#<command==atom>: <instancename>: <typename>: <core id>
+#<command==wire>: <instancename>: <fifo1>: [fifo2]: ...
+#<command==pars>: <instancename>: <par1>: [par2]: ...
+atom: kk0: BlockKK: 0
+atom: kk1: BlockKK: 1
+atom: kk2: BlockKK: 2
+atom: kk3: BlockKK: 3
+#
+atom: t : BlockTR: 0
+#
+atom: x : BlockX: 0
+atom: y : BlockY: 1
+#
+wire:kk0:ff_kk0
+wire:kk1:ff_kk1
+wire:kk2:ff_kk2
+wire:kk3:ff_kk3
+#
+wire: x: ff_x
+wire: y: ff_y
+wire: t: ff_x:ff_y
+#
+conf: t: ROUND_UP_N_BYTES_TO_DOUBLE_WORD_MULTIPLE(sizeof(EXILIB_tData_1))
+#
+#

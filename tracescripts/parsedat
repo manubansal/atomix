@@ -1,0 +1,844 @@
+#!/usr/bin/python
+
+import subprocess
+import sys, os
+import argparse
+from struct import *
+from math import *
+import random
+import operator
+import cmath
+import operator
+from scipy import stats
+import numpy as np
+import scipy
+
+import numpy as np 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt  
+
+DIFF_THRES = 0.003
+CORR_THRES = 0.997
+V=False
+VV=False
+
+
+#PREC='%22.13f'
+PREC='%12.3f'
+
+
+#rewrite data file
+def file_rewrite(reffile, et, eT, bs, s_sB, n, outfile, scaleFactor=1.0):
+  print "rewriting", reffile, "to",outfile
+  print "et =", et, ", eT =", eT
+
+  if scaleFactor < 0:
+    print 'Calculating scaleFactor...'
+    absmax = find_absmax(reffile, et, eT, bs, s_sB, n)
+    if eT == 'INT16' or eT == 'INT16be':
+      scaleFactor = 0.99 * 32767/(1.0 * absmax)
+    else:
+      print 'Unhandled element type', eT, 'for file rewrite'
+      sys.exit(1)
+
+  print 'Using scaleFactor=%f' % scaleFactor
+
+  if V:
+    print 'idx \t\tref \t'
+
+  if eT == 'INT16':
+    ofh = open(outfile, 'w')
+  elif eT == 'INT16be':
+    ofh = open(outfile, 'wb')
+  else:
+    print 'Unhandled buffer packout type', eT
+    sys.exit(1)
+
+  cnt = 0
+  for i in range(n):
+    ee1 = unpack_buffer(reffile, et, bs, s_sB)
+    packout_buffer(ee1, eT, ofh, scaleFactor)
+
+    if V:
+      for e1 in ee1:
+	  print '%4d   ' % cnt,
+	  print ('%f'*len(e1)) % e1
+	  cnt += 1
+
+  return ee1
+
+def find_absmax(reffile, et, eT, bs, s_sB, n):
+  absmax = 0.0
+  for i in range(n):
+    ee1 = unpack_buffer(reffile, et, bs, s_sB)
+    absmax = max([max([abs(e) for (e,) in ee1]),absmax])
+  return absmax
+
+def packout_buffer(ee1, eT, ofh, scaleFactor=1.0):
+  if eT == 'INT16':
+    ee1 = [e * scaleFactor for (e,) in ee1]
+    if max([abs(e) for e in ee1]) > 32767:
+      print 'overflow will occur'
+      sys.exit(1)
+    eeout = [int(e) for e in ee1]
+    for e in eeout:
+      #print >>ofh, e
+      print >>ofh, e, ','
+  elif eT == 'INT16be':
+    ee1 = [e * scaleFactor for (e,) in ee1]
+    if max([abs(e) for e in ee1]) > 32767:
+      print 'overflow will occur'
+      sys.exit(1)
+    eeout = [int(e) for e in ee1]
+    for e in eeout:
+      #print >>ofh, e
+      ofh.write(pack('>h', e))
+  else:
+    print 'Unhandled buffer packout type', eT
+    sys.exit(1)
+
+#rename data files
+
+def rewrite_dat_filenames(atomprfile, atomdbfile):
+  pattern = "__a*.dat"
+  proc = subprocess.Popen(["ls %s" % pattern], stdout=subprocess.PIPE, shell=True)
+  (out, err) = proc.communicate()
+  fls = out.split('\n')[:-1]
+
+  f = open(atomprfile, 'r')
+  atomprinfo = f.readlines()
+  f.close()
+
+  f = open(atomdbfile, 'r')
+  atomdbinfo = f.readlines()
+  f.close()
+
+  atomdbinfo = [l.strip().split(' ') for l in atomdbinfo]
+  atomdb = {}
+
+  for l in atomdbinfo:
+    atomname = l[0]
+    atomtype = l[1]
+    il = []
+    ol = []
+    if len(l) > 3:
+      il = [v.split(':') for v in l[3].split(',')]
+    if len(l) > 4:
+      ol = [v.split(':') for v in l[4].split(',')]
+    atomdb[atomname] = {'i':il, 'o':ol}
+
+  d = {}
+  for l in atomprinfo:
+    n, bl, at = l.strip().split(',')
+    d[n] = at
+
+  for f in fls:
+    n = f.strip().split('a')[1].split('b')[0]
+    suf = 'b' + ''.join(f.strip().split('b')[1:])
+    io, x = f.strip().split('bh')[1].split('.dat')[0]
+    x = int(x)
+
+    atname = d[n]
+    t = tuple(atomdb[atname][io][x])
+    iotype, ioname = t
+
+    fout = atname + '.' + suf.split('.dat')[0] + '.' + ioname + '.' + iotype + '.dat'
+    print f, '-->', fout
+
+    os.system('cp %s %s' % (f, fout))
+
+
+def normalize_buf(buf, is2d=False):
+  max_val = max([max(t) for t in buf]) * 1.0
+
+  print 'max_val =', max_val
+  if (max_val == 0):
+    print 'warning: all-zero buffer, not normalizing'
+    return buf
+
+  if is2d:
+    nbuf = [tuple([v/max_val for v in t]) for t in buf]
+  else:
+    nbuf = [b/max_val for b in buf]
+  return nbuf
+
+
+def print_bufs_adjacent(buf1, buf2, is2d=False):
+  if VV:
+    print '---------- normalized buf1, buf2 ----------'
+    #print buf1
+    #print buf2
+    c = ''
+
+    if not is2d:
+      for s1, s2 in zip(buf1, buf2):
+	#print s1, s2
+	c = ''
+	if not abs(s1-s2) < DIFF_THRES:
+	  c = '<<n'
+	print ('%8.4f') % s1, '|', ('%8.4f') % s2,'   ', c
+    else:
+      for s1, s2 in zip(buf1, buf2):
+	#print s1, s2
+	c = ''
+	#if not s1==s2:
+	#	c = '<<'
+	print ('%8.4f'*len(s1)) % s1, '|', ('%8.4f'*len(s2)) % s2,'   ', c
+    print '-------------------------------------------'
+
+#buffers are assuming to be an arrays; if is2d is true, is assumed to be an array of tuples
+def compare_2d_bufs(buf1, buf2, comparator):
+  status = 0
+  diff = (0, 0)
+
+  l1 = len(buf1)
+  if len(buf2) != l1:
+    print 'buffer comparator: array length mismatch'
+    return -1, diff
+  if l1 == 0:
+    return 0, diff
+
+
+  print_bufs_adjacent(buf1, buf2, True)
+
+  #iteratively compute 2d difference
+  l2 = len(buf1[0])
+  if len(buf2[0]) != l2:
+    print 'buffer comparator: tuple length mismatch'
+    return -2, diff
+  ds = []
+  for j in range(l2):
+    a1 = [e[j] for e in buf1]
+    a2 = [e[j] for e in buf2]
+    status, d = compare_1d_bufs(a1, a2, comparator)
+    ds.append(d)
+    diff = tuple(ds)
+
+  return status, diff
+
+def compare_1d_bufs(buf1, buf2, comparator):
+
+  #base case: compute 1d difference
+
+  status = 0
+  diff = (0, 0)
+
+  l1 = len(buf1)
+  if len(buf2) != l1:
+    print 'buffer comparator: array length mismatch'
+    return -1, diff
+  if l1 == 0:
+    return 0, diff
+
+  #print '*******'
+  #print buf1 
+  #print buf2
+  #print '*******'
+  #raw_input()
+  if comparator == 'direct':
+    di = [t1 - t2 for t1, t2 in zip(buf1, buf2)]
+    dmaxabs = max([abs(d) for d in di])
+    dnorm2 = sqrt(sum([d * d for d in di])/len(di))
+    diff = (dmaxabs, dnorm2)
+    if V:
+      print diff
+  elif comparator == 'sign':
+    di = []
+    for t1, t2 in zip(buf1, buf2):
+      if abs(t1*t2) > 0:
+	di.append(1 - (t1*t2)/abs(t1*t2))
+      else:
+        di.append(0)
+    dmaxabs = max([abs(d) for d in di])
+    dnorm2 = sqrt(sum([d * d for d in di])/len(di))
+    diff = (dmaxabs, dnorm2)
+    if V:
+      print diff
+  elif comparator == 'normalized':
+    ##buf1n = [a/max1 for a in buf1]
+    ##buf2n = [a/max2 for a in buf2]
+    ##print 'max1=',max1,'max2=',max2
+    ##print 't1=',buf1n[0]/max1,'t2=',buf2n[0]/max2 print 'l1 = ', l1
+    ##di = [t1 - t2 for t1, t2 in zip(buf1n, buf2n)]
+    di = [t1 - t2 for t1, t2 in zip(buf1, buf2)]
+    if VV:
+      print '----'
+      print 'difference vector:'
+      for t1, t2, v in zip(buf1, buf2, di):
+	#print t1, t2, v
+	#c = ''
+	#if not s1==s2:
+	#  c = '<<'
+	print ('%8.4f') % t1, '|', ('%8.4f') % t2,'   diff = %22.18f' % v 
+      print '----'
+    dmaxabs = max([abs(d) for d in di])
+    dnorm2 = sqrt(sum([d * d for d in di])/len(di))
+    diff = (dmaxabs, dnorm2)
+    print diff
+    #raw_input()
+
+  elif comparator == 'pearson':
+    
+    corr, max_abs_corr, delay, vec_len = correlate(buf1, buf2)
+    print 'corr = ', corr, 'max_abs_corr = ', max_abs_corr, 
+    print 'delay = ', delay, 'vec_len = ', vec_len
+
+    diff = (corr, max_abs_corr, delay, vec_len)
+
+  elif comparator == 'cplx-normalized':
+    rr = [a/b for a, b in zip(buf1, buf2)]
+    rr_p = [cmath.polar(r) for r in rr]
+    norm_max = max([norm for norm,_ in rr_p])
+    rr_pn = [(norm/norm_max,phase) for norm,phase in rr_p]
+    
+    poorest_norm_match = min([norm for norm,_ in rr_pn])
+    pp = [abs(phase) for _,phase in rr_pn]
+    index, max_abs_phase_diff = max(enumerate(pp), key=operator.itemgetter(1))
+    max_phase_diff_by_mag = pp[index]
+
+    if V:
+      print 'normalized magnitude of ratio | phase of ratio'
+      for r in rr_pn:
+	print '%8.4f                      | %8.4f' % r
+
+    print 'poorest_norm_match = ', poorest_norm_match,
+    print 'max_phase_diff_by_mag = ', max_phase_diff_by_mag
+
+    diff = (poorest_norm_match, max_phase_diff_by_mag)	#(1.0, 0.0) when perfect match
+
+  elif comparator == 'cplx-linregress':
+    #print zip(buf1, buf2)
+
+    ##### magnitude regression #####
+    print '---- magnitude regression----'
+    r1 = [abs(e) for e in buf1]
+    r2 = [abs(e) for e in buf2]
+    x = np.array(r1)
+    y = np.array(r2)
+
+    #version 1
+    #slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
+    #t = stats.linregress(x, y)
+    #print t
+
+    #version 2
+    #x = x[:,np.newaxis]
+    ##a, _, _, _ = np.linalg.lstsq(x, y)
+    #t = np.linalg.lstsq(x, y)
+    #print t
+
+    #version 3
+    print ':: forcing regression intercept to 0 ::'
+    #fitfunc = lambda params, x: params[0] * x + params[1]    #create fitting function of form mx+b
+    fitfunc = lambda params, x: params[0] * x     #create fitting function of form mx so that b is forced to 0
+    errfunc = lambda p, x, y: fitfunc(p, x) - y              #create error function for least squares fit
+    init_a = 0.5                            #find initial value for a (gradient)
+    #init_b = min(y)                         #find initial value for b (y axis intersection)
+    #init_p = numpy.array((init_a, init_b))  #bundle initial values in initial parameters, for mx+b
+    init_p = np.array((init_a, 0))  #bundle initial values in initial parameters, for mx with b forced to 0
+    #calculate best fitting parameters (i.e. m and b) using the error function
+    p1, success = scipy.optimize.leastsq(errfunc, init_p.copy(), args = (x, y))
+    f = fitfunc(p1, x)          #create a fit with those parameters
+    t = p1, f
+    print 'slope, intercept:', p1 
+    #print f
+
+
+    ##### phase regression #####
+    #print '---- phase regression----'
+    #t1 = [cmath.phase(e) for e in buf1]
+    #t2 = [cmath.phase(e) for e in buf2]
+    #x = np.array(t1)
+    #y = np.array(t2)
+    #t = stats.linregress(x, y)
+    #print t
+
+
+    evm, evm_dB = compute_evm(list(f), list(y))
+    print 'evm:', evm, 'evm_dB:', evm_dB
+    ref_snrs_dB, eff_snrs_dB = compute_effective_snr(evm)
+    for g, G in zip(ref_snrs_dB, eff_snrs_dB):
+      print 'ref_snr_dB = ', g, ' :  eff_snr_dB =', G
+
+    sys.exit(1)
+  else:
+    print 'dont know how to compare'
+    exit(0)
+
+  return status, diff
+
+#x: reference constellation point array
+#y: observed constellation point array
+def compute_evm(x, y):
+  evm = 0
+  evm_dB = 0
+  n = [yv - xv for yv, xv in zip(y, x)]
+  #print n
+  pn = power(n)
+  ps = power(x)
+  evm = pn/ps
+  evmdB = 10 * log10(evm)
+  return evm, evmdB
+
+#This function computes the net SNR for the test signal
+#assuming a certain evm with respect to a reference signal.
+#The net SNR is computed for a set of assumed SNR values of
+#the reference signal. Thus, this function is tabulating the
+#degradation in SNR of the test signal if it has a non-zero
+#EVM with respect to the reference signal. Note that the
+#computation is accurate only at high SNRs.
+def compute_effective_snr(evm):
+  ref_snrs_dB = [50.0, 40.0, 30.0, 20.0]
+  ref_snrs = [pow(10,g/10) for g in ref_snrs_dB]
+  Gs = [1/(1/g + e) for g, e in zip(ref_snrs, len(ref_snrs) * [evm])]
+  eff_snrs_dB = [10 * log10(G) for G in Gs]
+  return ref_snrs_dB, eff_snrs_dB
+  
+def correlate_unit_test():
+  #a1 = range(10)
+  #a2 = range(1, 11)
+  a1 = [random.random() for i in range(11)]
+  #a1 = [random.random() for i in range(5)]
+  a2 = a1[1:]
+  a1 = a1[:-1]
+  print correlate(a1, a2)
+
+#correlation model: truncated
+def correlate(a1, a2):
+  max_corr = 0
+  #max_shift = 20	#try shifting by at most these many samples in either direction
+  #max_shift = 2
+  max_shift = 6
+  if len(a1) == 0 or len(a2) == 0:
+    print 'error: i dont know how to correlate a zero length vector'
+    exit(0)
+
+  if len(a1) == 1:
+    print 'error: i dont know how to correlate a scalar with a vector'
+    exit(0)
+
+
+  corr_vec = []
+  delay_vec = []
+  len_vec = []
+
+  # zero delay
+  corr = pearson(a1, a2)
+  corr_vec.append(corr)
+  delay_vec.append(0)
+  len_vec.append(len(a1))
+
+  if len(a1) < 4:
+    print 'warning: vectors are less than length 4, cannot try any shift'
+  else:
+    max_shift = min(max_shift, len(a1) - 3)	#vectors or length at least 3
+
+    print 'trying cross-correlation upto', max_shift, 'sample delay in either direction'
+
+    # high correlation when test signal is ahead of reference signal (negative delay)
+    for delay in range(1, max_shift + 1):
+      x = a1[0:-delay]
+      y = a2[delay:]
+      corr = pearson(x, y)
+      corr_vec.append(corr)
+      delay_vec.append(-delay)
+      len_vec.append(len(x))
+
+    # high correlation when test signal is behind reference signal (positive delay)
+    for delay in range(1, max_shift + 1):
+      x = a1[delay:]
+      y = a2[0:-delay]
+      corr = pearson(x, y)
+      corr_vec.append(corr)
+      delay_vec.append(delay)
+      len_vec.append(len(x))
+
+  #max_abs_corr = max([abs(corr) for corr in corr_vec])
+  index, max_abs_corr = max(enumerate(corr_vec), key=operator.itemgetter(1))
+  max_corr_delay = delay_vec[index]
+  max_corr_vec_len = len_vec[index]
+  corr = corr_vec[index]
+
+  if V:
+    print '-----------------------'
+    print 'delay  corr    vec_len'
+    #print zip(delay_vec, corr_vec)
+    ch_vec = ['' for i in range(len(delay_vec))]
+    ch_vec[index] = '<<'
+    for d, c, l, ch in zip(delay_vec, corr_vec, len_vec, ch_vec):
+      print '%3d    %5.2f    %5d    %s' % (d, c, l, ch)
+    print '-----------------------'
+
+  return corr, max_abs_corr, max_corr_delay, max_corr_vec_len
+
+
+# calculates the mean
+def mean(x): 
+    sum = 0.0
+    for i in x:
+         sum += i
+    return sum / len(x) 
+
+# calculates the sample standard deviation
+def samplestandarddeviation(x):
+    sumv = 0.0
+    for i in x:
+         sumv += (i - mean(x))**2
+    return sqrt(sumv/(len(x)-1))
+
+# calculates the pcc using both the 2 functions above
+def pearson(x,y):
+    if len(x) != len(y):
+      print 'error: i dont know how to correlate vectors of differing lengths'
+      exit(0)
+
+    if len(x) == 1:
+      print 'error: i dont know how to find the pearson correlation of a scalar with a vector'
+      exit(0)
+
+    if VV:
+      for e1, e2 in zip(x, y):
+	print e1, e2
+
+    scorex = []
+    scorey = []
+
+    for i in x: 
+        scorex.append((i - mean(x))/samplestandarddeviation(x)) 
+
+    for j in y:
+        scorey.append((j - mean(y))/samplestandarddeviation(y))
+
+# multiplies both lists together into 1 list (hence zip) and sums the whole list   
+    corr = (sum([i*j for i,j in zip(scorex,scorey)]))/(len(x)-1)
+
+    if VV:
+      print 'corr = ', corr
+
+    return corr
+
+
+def es_ei_from_et(et, bs):
+  if et == 'FLOAT32le':
+    es = 4
+    ei = '<f'
+  elif et == 'FLOAT32':
+    es = 4
+    ei = '>f'
+  elif et == 'CPLXDBL':
+    es = 16 
+    ei = '>dd'	#double, double in big-endian format
+  elif et == 'CPLX16':
+    es = 4
+    ei = '>hh'	#short, short in big-endian format
+  elif et == 'INT16':
+    es = 2
+    ei = '>h'	#short in big-endian format
+  elif et == 'INT8':
+    es = 1
+    ei = '>b'	#signed char/Int8 in big-endian format
+  elif et == 'UINT8':
+    es = 1
+    ei = '>B'	#unsigned char/uint8 in big-endian format
+  elif et == 'DBL':
+    es = 8
+    ei = '>d'
+  elif et == 'PBITS8-msb-first':
+    es = 1
+    ei = '>B'
+    if bs % 8 != 0:
+      #print 'ERROR: need number of bits a multiple of 8'
+      #sys.exit(1)
+      bs = bs/8 + 1
+    else:
+      bs = bs/8		#effective buffer size for correct bufsize computation ahead
+  else:
+    print 'unknown elementtype'
+    sys.exit(0)
+
+
+  bufsize = bs * es
+
+  return es, ei, bufsize
+
+def power(ee):	#array of tuples
+  #p = sqrt(mean([sum([d * d for d in e]) for e in ee]))
+  if hasattr(ee[0], '__iter__'):
+    p = mean([sum([d * d for d in e]) for e in ee])
+  else:
+    p = mean([e * e for e in ee])
+  return p
+
+def unpack_buffers(reffile, tracefile, et, eT, bs, s_sB, S_SB, reversetest=False):
+  ee1 = unpack_buffer(reffile, et, bs, s_sB)
+  ee2 = unpack_buffer(tracefile, eT, bs, S_SB, 1, reversetest)
+
+  es1, ei1, bsz1 = es_ei_from_et(et, bs)
+  es2, ei2, bsz2 = es_ei_from_et(eT, bs)
+
+  if V:
+    print 'idx                ref                               | \t\t\t\ttrace'
+
+  pwr_e1 = power(ee1)
+  pwr_e2 = power(ee2)
+  for idx, (e1, e2) in enumerate(zip(ee1, ee2)):
+    c = '  '
+    d = tuple([0]*len(e1))
+    r = ()
+    if not e1==e2:
+      c = '<<'
+    d = tuple(map(operator.sub, e1, e2))
+    rr = []
+    for a, b in zip(e1, e2):
+      try:
+	r = a * 1.0 / b 
+      except ZeroDivisionError:
+	r = float('nan')
+      rr.append(r)
+    r = tuple(rr)
+    if V:
+      print '%4d   ' % idx,
+      #print ('%8d'*len(e1)) % e1, '|', ('%8d'*len(e2)) % e2,'   ', c,'   ',
+      #print 'diff', ('%8d  '*len(d)) % d,'     ',
+      print (PREC*len(e1)) % e1, '|', (PREC*len(e2)) % e2,'   ', c,'   ',
+      print 'diff', ((PREC + '  ')*len(d)) % d,'     ',
+      print 'ratio', ((PREC + '  ')*len(r)) % r
+  print '----------------------------------------------------------------'
+  print ' powers: %22.13f | %22.13f' % (pwr_e1, pwr_e2)
+  print '----------------------------------------------------------------'
+
+  return ee1, ee2
+
+def unpack_buffer(filen, et, bs, s_sB, n=1, reverse=False):
+  es, ei, bsz = es_ei_from_et(et, bs)
+
+  s, sB = s_sB
+  if s != 0 and sB != 0:
+    if sB != s * bsz:
+      printf("ERROR: both buffer skip count and byte skip are specified but they do not match")
+      sys.exit(1)
+
+  if sB == 0:
+    sB = s * bsz
+
+  f = open(filen, 'rb')
+  #for i in range(s):
+  #  buf = f.read(bsz)
+  #print 's_sB=',s_sB
+  buf = f.read(sB)
+  buf = f.read(bsz * n)
+  f.close()
+  if len(buf) < bsz * n:
+    print filen, 'does not have enough data'
+    print 'need', bsz * n, 'bytes, read', len(buf), 'bytes'
+    sys.exit(1)
+
+  ee = []
+  if et == 'PBITS8-msb-first':
+    if bs % 8 == 0:
+      nfullbytes = bs/8
+    else:
+      nfullbytes = bs/8 + 1
+      if n > 1:
+        print "ERROR: I cannot work with n > 1 when buffer contains packed bits with a count that is not a multiple of 8"
+	sys.exit(1)
+
+    for i in range(n * nfullbytes):
+      si = (i*es)
+      ti = ((i+1)*es)
+      e, = unpack(ei, buf[si:ti])
+      eee = bin(e).lstrip('0b').zfill(8)
+      for e in eee:
+	ee.append((int(e),))
+    if n == 1 and bs % 8 != 0:
+      ee = ee[0:bs]
+
+  else:
+    for i in range(n * bs):
+      si = (i*es)
+      ti = ((i+1)*es)
+      e = unpack(ei, buf[si:ti])
+      ee.append(e)
+
+  if reverse:
+    ee = ee[::-1]
+
+  return ee
+
+def list_buffer(ee, et):
+  if et == 'CPLX16':
+    for e in ee:
+      print ('%8d'*len(e)) % e
+  elif et == 'CPLXDBL':
+    for e in ee:
+      print ('%15.6f  '*len(e)) % e
+  
+def plot_constellation(tracefile, et, bs, s_sB, n=1, outfile="constellation.png"):
+  print et
+  if et != 'CPLX16' and et != 'CPLXDBL':
+    print 'cannot plot constellation for et other than CPLX16 or CPLXDBL'
+    exit(1)
+
+  print 'unpacking buffer(s)...'
+  ee = unpack_buffer(tracefile, et, bs, s_sB, n)
+  if V:
+    list_buffer(ee, et)
+
+  plt.scatter(*zip(*ee))
+  plt.savefig(outfile, format="png" )
+
+  print n
+  
+  return
+
+def compare_dat_files(reffile, tracefile, et, eT, bs, co, s_sB, S_SB, reversetest=False):
+  s, sB = s_sB
+  S, SB = S_SB
+  print 'comparing', reffile, tracefile
+  print 'ref-elementtype', et, 'test-elementtype', eT, 'buffersize', bs, 'comparator', co, 'skip-ref', s, 'skip-ref-bytes', sB, 'skip-test', S, 'skip-test-bytes', SB
+
+  ee1, ee2 = unpack_buffers(reffile, tracefile, et, eT, bs, s_sB, S_SB, reversetest)
+
+  if et == 'CPLX16' or et == 'CPLXDBL':
+    ee1_cplx = []
+    ee2_cplx = []
+    for e1, e2 in zip(ee1, ee2):
+      rr,ii = e1
+      ee1_cplx.append(complex(rr*1.0,ii*1.0))
+      rr,ii = e2
+      ee2_cplx.append(complex(rr*1.0,ii*1.0))
+
+  if co == 'list':
+    status = 1
+    match = 0
+  elif co == 'direct':
+    status, diff = compare_2d_bufs(ee1, ee2, co)
+    diff, = diff
+    (dmaxabs, dnorm2) = diff
+    match = dmaxabs < DIFF_THRES
+  elif co == 'sign':
+    status, diff = compare_2d_bufs(ee1, ee2, co)
+    diff, = diff
+    (dmaxabs, dnorm2) = diff
+    match = dmaxabs < DIFF_THRES
+  elif co == 'normalized':
+    ee1 = normalize_buf(ee1, True)
+    ee2 = normalize_buf(ee2, True)
+    status, diff = compare_2d_bufs(ee1, ee2, co)
+    match = max([dmaxabs for dmaxabs, dnorm2 in diff]) < DIFF_THRES
+  elif co == 'pearson':
+    status, diff = compare_2d_bufs(ee1, ee2, co)
+    _,_,delay0,_ = diff[0]
+    delay_match = min([delay0 == delay for _,_,delay,_  in diff])
+    match = min([corr for corr, max_abs_corr, delay, vec_len in diff]) > CORR_THRES
+    match = match and (delay_match == 1)
+  elif co == 'cplx-normalized':
+    status, diff = compare_1d_bufs(ee1_cplx, ee2_cplx, co)
+    poorest_norm_match, max_phase_diff_by_mag = diff	#(1.0, 0.0) when perfect match
+    match_norm = abs(1.0 - poorest_norm_match) < DIFF_THRES
+    match_phase = abs(max_phase_diff_by_mag) < DIFF_THRES
+    match = match_norm and match_phase
+  elif co == 'cplx-linregress':
+    status, diff = compare_1d_bufs(ee1_cplx, ee2_cplx, co)
+    poorest_norm_match, max_phase_diff_by_mag = diff	#(1.0, 0.0) when perfect match
+    match_norm = abs(1.0 - poorest_norm_match) < DIFF_THRES
+    match_phase = abs(max_phase_diff_by_mag) < DIFF_THRES
+    match = match_norm and match_phase
+  else:
+    print 'bad comparator'
+    exit(0)
+  if match:
+    m = "MATCH   "
+  else:
+    m = "MISMATCH"
+  if (status != 0):
+    print 'error comparing buffers'
+  else:
+    print m, 'difference stats:', diff
+
+  return match
+
+def main():
+  global V
+  global VV
+
+  parser = argparse.ArgumentParser(description='match buffer traces.')
+  #parser.add_argument('integers', metavar='n', type=int, nargs='+',
+  #		     help='an integer for the accumulator')
+  parser.add_argument('-a', '--atomprfile', dest='atomprfile', action='store', help='atom profiling table file')
+  parser.add_argument('-d', '--atomdbfile', dest='atomdbfile', action='store', help='atom database file')
+  parser.add_argument('-r', '--reffile', dest='reffile', action='store', help='reference data file')
+  parser.add_argument('-t', '--reftype', dest='et', action='store', default='CPLX16', help='element type in the reference buffer')
+  parser.add_argument('-T', '--testtype', dest='eT', action='store', default=None, help='element type in the test buffer (default: same as reftype)')
+  parser.add_argument('-b', '--buffersize', dest='bs', action='store', type=int, default=48, help='buffer size as number of elements per buffer')
+  parser.add_argument('-n', '--numbufs', dest='n', action='store', type=int, default=1, help='number of buffers to process')
+  parser.add_argument('-c', '--comparator', dest='co', action='store', default='normalized', help='comparator used for comparing buffers <list | plot-const | [normalized] | pearson | cplx-normalized | cplx-linregress >')
+  parser.add_argument('-s', '--skip-ref', dest='s', action='store', type=int, default=0, help='#buffers to skip in the reference file')
+  parser.add_argument('--skip-ref-bytes', dest='sB', action='store', type=int, default=0, help='#bytes to skip in the reference file')
+  parser.add_argument('-S', '--skip-test', dest='S', action='store', type=int, default=0, help='#buffers to skip in the trace file')
+  parser.add_argument('--skip-test-bytes', dest='SB', action='store', type=int, default=0, help='#bytes to skip in the test file')
+  parser.add_argument('--reverse-test-buffer', dest='reversetest', action='store_true', default=False, help='#reverse elements in the test buffer before processing. Correct reverse is performed (bit-reverse, byte-reverse, sample-reverse etc) depending on the data byte of the buffer.')
+  #parser.add_argument('-f', '--offset', dest='f', action='store', type=int, default=0, help='offset of the field in the buffer in #bytes (e.g. a struct field that is not the first field will have an offset)')
+  parser.add_argument('-o', '--outfile', dest='outfile', action='store', help='output file')
+  parser.add_argument('-f', '--scale-factor', dest='scaleFactor', type=float, action='store', default=1.0, help='scaling factor to rewrite files')
+  parser.add_argument('tracefile', nargs='?', action='store', help='tracefile to match against reference file')
+  parser.add_argument('-v',dest='V', action='store_true', help='verbose')
+  parser.add_argument('-vv',dest='VV', action='store_true', help='very verbose')
+
+  args = parser.parse_args()
+
+  if args.eT == None:
+    args.eT = args.et
+
+  if (args.V):
+    V = True
+
+  if (args.VV):
+    V = True
+    VV = True
+
+  #correlate_unit_test()
+  #return
+
+  if (args.co == 'rewrite'):
+    file_rewrite(args.reffile, args.et, args.eT, args.bs, (args.s, args.sB), args.n, args.outfile, args.scaleFactor)
+    return
+
+  if (args.co == 'plot-const'):
+    plot_constellation(args.tracefile, args.et, args.bs, (args.s, args.sB), args.n, args.outfile)
+    return
+
+  if ((args.atomprfile == None or args.atomdbfile == None) and args.reffile == None):
+    print parser.print_help()
+    print
+    print '!! need either atomprfile,atomdbfile or reffile'
+    exit(0)
+  elif ((args.atomprfile != None or args.atomdbfile != None) and args.reffile != None):
+    print parser.print_help()
+    print
+    print '!! need only one of atomprfile,atomdbfile or reffile'
+    exit(0)
+
+  #print args
+
+  if (args.atomprfile != None and args.atomdbfile != None):
+    rewrite_dat_filenames(args.atomprfile, args.atomdbfile)
+
+  if (args.reffile != None):
+    if args.tracefile == None:
+      print parser.print_help()
+      print
+      print '!! need a tracefile with reffile'
+      exit(0)
+      
+    match = compare_dat_files(args.reffile, args.tracefile, args.et, args.eT, args.bs, args.co, (args.s, args.sB), (args.S, args.SB), args.reversetest)
+    if args.co == 'normalized' and not match:
+      print 'no match with', args.co
+      co = 'pearson'
+      print 'trying again with', co, 'comparator'
+      match = compare_dat_files(args.reffile, args.tracefile, args.et, args.eT, args.bs, co, (args.s, args.sB), (args.S, args.SB), args.reversetest)
+
+
+if __name__ == "__main__":
+  main()

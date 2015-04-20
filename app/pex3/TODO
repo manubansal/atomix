@@ -1,0 +1,12 @@
+1. Extra transfer atom is getting generated
+2. To create an example of alternate samples from a state going to two different states - a realistic example
+    a -- b
+    a -- c
+  How would you write this example?
+
+3. To create an example of alternate samples read from different states
+    
+    a -- b
+    c -- b
+
+  How would you write this example?

@@ -1,0 +1,5 @@
+viterbi decoding unittest using vcp2.
+
+ChangeLog:
+12/18/2013: Ported from outdated standalone project vitdec/vitdec_test to 
+new version for orsys tree. Tested head-convergent mode on EVM6618.

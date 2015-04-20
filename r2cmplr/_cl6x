@@ -1,0 +1,424 @@
+#/bin/bash
+
+
+TI_CC=cl6x
+SRC_EXT="c|cc|cpp"
+OBJ_EXT="o|obj"
+LIB_EXT="a"
+BIN_EXT="out"
+
+
+#ac_ext=c
+#ac_cpp='$CPP $CPPFLAGS'
+#ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+#ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+#ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+#echolog "cl6x_"  >> cl6x_.log
+#cmd="cl6x $@ -z"
+#echolog $cmd >> cl6x_.log
+#$cmd >> cl6x_.log
+
+##This is because the way configure script invokes the compiler means
+##that arguments with spaces in them come to us as literals like "a b c", (with quotes)
+##instead of an interpreted element like "a b c" (without quotes). We are passing in the
+##command string through the bash interpreter once more to take care of that.
+##However, on doing so, any backslashes get consumed too but we want to preserve them.
+##So we'll escape them.
+####opts=($@)
+#opts=()
+##echo "opts:$opts"
+##echo "count first: ${#opts[@]}"
+##for opt in ${opts[@]}
+##echo "4:$4"
+##echo "5:$5"
+##for opt in $@
+#c=$#
+#echo "count=$c"
+#for i in `seq 1 $c`
+#do
+##  echo $opt
+##  echo ${$i}
+#  echo $1
+#  #opts[${#opts[*]}]="$1"
+#  opts[${#opts[*]}]="` echo $1 | sed -e 's:\\\\:\/:g'`"	#\ goes to / so that it is preserved upon
+#  								#reinterpretation by the shell
+#  shift
+#done
+#echo "opts: ${opts[@]}"
+#echo "length of opts: ${#opts[*]}"
+#echo "opts[4]: ${opts[4]}"
+#echo "opts[5]: ${opts[5]}"
+#echo "opts[6]: ${opts[6]}"
+#echo "----------------------------"
+##opts=`echo $opts | sed 's/\\/\\\\/g'`
+#####opts=`echo $opts | sed -e 's:\\\\:\\\\\\\\:g'`		#\ goes to \\ so that \ stays as \ upon
+#								#reinterpretation by the shell
+##opts=`echo $opts | sed -f ./bstodbs.sh`
+###eval set -- $@
+#####eval set -- "$opts"
+##eval set -- ${opts[@]}
+#eval set -- ( ${opts[@]} )
+#
+
+#This is a super-hack to fix the difference in inupt format when this
+#compiler wrapper is called by configure and when it's called by make.
+#With configure, we end up seeing a literal string path like "O:/...."
+#which needs to be understood as a string but without quotes, so we 
+#ask the shell to reinterpret arguments. With make, we see the effective
+#string value in the first pass, so we don't do it.
+####if [ "`echo $@ | grep  \\\"`" ]
+####then
+####  echo "re-evaulation command arguments"
+####  eval set -- $@
+####fi
+####
+#LOGFILE="cl6x_v2.log"
+LOGFILE="_cl6x.log"
+
+function echolog {
+  echo "$@"
+  #echo "$@" >> $LOGFILE
+}
+
+opts="$@"
+echolog "" $LOGSUFFIX
+echolog "cmd: $0 $opts" $LOGSUFFIX
+echolog "" $LOGSUFFIX
+
+OTHERFLAGS=""
+LDFLAGS=""
+CFLAGS=""
+OPT_c=0
+
+aflag=no
+bflag=no
+cargument=none
+
+# options may be followed by one colon to indicate they have a required argument
+#if ! options=$(getopt -o o:zci:l:gD:I:vV -l version,run_linker,output,LDFLAGS_CMD_FILE:,CFLAGS_CMD_FILE: -- "$@")	#quoted
+#if ! options=$(getopt -a -o o:zci:l:gD:I:vV -l version,run_linker,output,LDFLAGS_CMD_FILE:,CFLAGS_CMD_FILE:,ALLFLAGS_CMD_FILE: -- "$@")	#quoted, #-long allowed too
+#if ! options=$(getopt -a -o o:cgD:i:I:O: -l include_path:,printf_support:,qversion,output_file:,CMPLR_FLAGS_FILE:,LINKER_FLAGS_FILE:,LINKER_SCRIPT_FILE:,zero_init: -- "$@")  #quoted, #-long allowed too
+if ! options=$(getopt -a -o o:cgD:i:I:O:T: -l mem_model\:data:,tsconf:,disable_clink,no_const_clink,silicon_version:,abi:,zero_init:,trampolines:,define:,include_path:,printf_support:,qversion,gen_profile_info,output_file:,gen_func_subsections:,CMPLR_FLAGS_FILE:,LINKER_FLAGS_FILE:,LINKER_SCRIPT_FILE: -- "$@")  #quoted, #-long allowed too
+#if ! options=$(getopt -a -o o:cgD:i:I:O:m: -l include_path:,printf_support:,qversion,output_file:,CMPLR_FLAGS_FILE:,LINKER_FLAGS_FILE:,LINKER_SCRIPT_FILE:map_file: -- "$@")  #quoted, #-long allowed too
+#if ! options=$(getopt -u -o o:zci: -l run_linker,output,LDFLAGS,CFLAGS: -- "$@")	#unquoted
+then
+    # something went wrong, getopt will put out an error message for us
+    exit 1
+fi
+
+#set -- $options
+#echolog '$options:'"$options"
+#echolog "length: ${#options[@]}"
+#echolog '$#:'$#
+#optarray=(${options})
+#options=`echolog ${options} | sed "s/'/\"/g"`
+#options=`echolog ${options} | sed "s/'/\\\"/g"`
+#echolog '$options:'"$options"
+#optarray=($options)
+#echolog "length: ${#optarray[@]}"
+eval set -- $options
+
+#echolog "length: $#"
+#exit
+
+while [ $# -gt 0 ]
+do
+    #echolog '$1:'"$1"
+    #echolog '$2:'"$2"
+
+    case "$1" in
+
+    #-v|-V|--version) OPT_v=1; OTHERFLAGS="$OTHERFLAGS -qversion";
+    --qversion) OPT_qversion=1; OTHERFLAGS="$OTHERFLAGS -qversion";
+    ;;
+
+    ############################################
+    ###### stuff that goes into CFLAGS #########
+    ############################################
+    -c) OPT_c=1
+    ;;
+
+    -g) OPT_g=1; CFLAGS="$CFLAGS -g"
+    ;;
+
+    ##explicitly tagged CFLAGS specified as CFLAGS="--CFLAGS ..." to the original call
+    #--CFLAGS) OPT_CFLAGS=1; OPT_CFLAGS_ARG="$2"; CFLAGS="$CFLAGS $2"; shift
+    #;;
+
+    #explicitly tagged CFLAGS specified as CFLAGS="--CFLAGS ..." to the original call
+    #--CFLAGS_CMD_FILE) 
+    #	OPT_CFLAGS_CMD_FILE=1; 
+#	OPT_CFLAGS_CMD_FILE_ARG="$2"; 
+#	CFLAGS="$CFLAGS --cmd_file \"$2\""; shift
+#    ;;
+
+    -i|-I|--include_path) OPT_i=1; OPT_i_ARG="$2"; CFLAGS="$CFLAGS -I\"$2\""; shift
+    ;;
+
+    -O) OPT_o=1; OPT_o_ARG="$2"; CFLAGS="$CFLAGS -O$2"; shift
+    ;;
+
+    --printf_support) OPT_p=1; OPT_p_ARG="$2"; CFLAGS="$CFLAGS --printf_support=$2"; 
+    shift
+    ;;
+
+    -D|--define) OPT_D=1; OPT_D_ARG="$2"; CFLAGS="$CFLAGS -D\"$2\""; shift
+    LDFLAGS="$LDFLAGS --define=\"$OPT_D_ARG\""
+    ;;
+
+    --trampolines) OPT_T=1; OPT_T_ARG="$2"; 
+    CFLAGS="$CFLAGS --trampolines=\"$2\""; shift
+    LDFLAGS="$LDFLAGS --trampolines=\"$OPT_T_ARG\""
+    ;;
+
+    --gen_profile_info) CFLAGS="$CFLAGS --gen_profile_info"; 
+    LDFLAGS="$LDFLAGS --gen_profile_info"
+    ;;
+
+    --gen_func_subsections) CFLAGS="$CFLAGS --gen_func_subsections=$2"; 
+    LDFLAGS="$LDFLAGS --gen_func_subsections=$2"; 
+    shift
+    ;;
+
+    --abi) CFLAGS="$CFLAGS --abi=$2"; 
+    LDFLAGS_pre="$LDFLAGS_pre --abi=$2"; 
+    shift
+    ;;
+
+    --silicon_version) CFLAGS="$CFLAGS --silicon_version=$2"; 
+    LDFLAGS_pre="$LDFLAGS_pre --silicon_version=$2"; 
+    shift
+    ;;
+
+    --no_const_clink) CFLAGS="$CFLAGS --no_const_clink"; 
+    LDFLAGS_pre="$LDFLAGS_pre --no_const_clink"; 
+    ;;
+
+    --disable_clink) CFLAGS="$CFLAGS --disable_clink"; 
+    LDFLAGS_pre="$LDFLAGS_pre --disable_clink"; 
+    ;;
+
+    --mem_model:data) CFLAGS="$CFLAGS --mem_model:data=$2";
+    LDFLAGS_pre="$LDFLAGS_pre --mem_model:data=$2";
+    shift
+    ;;
+
+    ############################################
+    ###### stuff that goes into LDFLAGS ########
+    ############################################
+    --zero_init) OPT_zi=1; OPT_zi_ARG="$2"; LDFLAGS="$LDFLAGS --zero_init=$2"; shift
+    ;;
+
+
+    #-z|--run_linker) OPT_z=1; LDFLAGS="-z $LDFLAGS"
+    #;;
+    
+    #-o|--output) OPT_o=1; OPT_o_ARG="$2"; LDFLAGS="$LDFLAGS -o \"$2\""; shift
+    #;;
+
+    ##explicitly tagged LDFLAGS specified as LDFLAGS="--LDFLAGS ..." to the original call
+    #--LDFLAGS) OPT_LDFLAGS=1; OPT_LDFLAGS_ARG="$2"; LDFLAGS="$LDFLAGS $2"; shift
+    #;;
+
+    #explicitly tagged LDFLAGS specified as LDFLAGS="--LDFLAGS ..." to the original call
+    #--LDFLAGS_CMD_FILE) 
+    #	OPT_LDFLAGS_CMD_FILE=1; 
+#	OPT_LDFLAGS_CMD_FILE_ARG="$2"; 
+#	#LDFLAGS="$LDFLAGS --cmd_file=\"$2\""; shift
+#	LDFLAGS="$LDFLAGS -@ \"$2\""; shift
+#    ;;
+
+    #
+    --CMPLR_FLAGS_FILE)
+    	OPT_CMPLR_FLAGS_FILE=1;
+	OPT_CMPLR_FLAGS_FILE_ARG="$2";
+	CMPLR_FLAGS_FILE_TO_COMPILE="\"$2\""
+	#LDFLAGS="--cmd_file=\"$2\" $LDFLAGS"; shift
+	shift;
+	;;
+
+    --LINKER_FLAGS_FILE)
+    	OPT_LINKER_FLAGS_FILE=1;
+	OPT_LINKER_FLAGS_FILE_ARG="$2";
+	LINKER_FLAGS_FILE_TO_COMPILE="\"$2\""
+	#LDFLAGS="--cmd_file=\"$2\" $LDFLAGS"; shift
+	shift;
+	;;
+
+    --LINKER_SCRIPT_FILE)
+    	OPT_LINKER_SCRIPT_FILE=1;
+	OPT_LINKER_SCRIPT_FILE="$2";
+	LINKER_SCRIPT_FILE_TO_COMPILE="\"$2\""
+	#LDFLAGS="--cmd_file=\"$2\" $LDFLAGS"; shift
+	shift;
+	;;
+
+    ##############################################
+    ### stuff that could go either way/common ####
+    ##############################################
+
+    -o|--output_file) OPT_o=1; OPT_o_ARG="$2"; 
+    #if [[ "$2" =~ .*\.obj ]]; then
+    if [[ "$2" =~ .*\.($OBJ_EXT)$ ]]; then
+      echo "$0: object output file option recognized: $2"
+      CFLAGS="$CFLAGS --output_file \"$2\""; shift
+    else
+      if [[ "$2" =~ .*\.($BIN_EXT)$ ]]; then
+        echo "$0: binary output file option recognized: $2"
+	LDFLAGS="$LDFLAGS -o \"$2\""
+	LDFLAGS="$LDFLAGS -m \"$2.map\""
+	shift
+      else
+        if [[ "$2" =~ .+\..+ ]]; then
+	  echo "$0: error - unrecognized output file type $2" 1>&2; exit 1;
+	else
+	  LDFLAGS="$LDFLAGS -o \"$2\""; shift
+	fi
+      fi
+    fi
+    ;;
+
+#    -m|--map_file) OPT_m=1; OPT_m_ARG="$2"; LDFLAGS="$LDFLAGS -m \"$2\""; shift
+#    ;;
+
+#    --ALLFLAGS_CMD_FILE)
+#    	OPT_ALLFLAGS_CMD_FILE=1;
+#	OPT_ALLFLAGS_CMD_FILE_ARG="$2";
+#	#LDFLAGS="--cmd_file=\"$2\" $LDFLAGS"; shift
+#	shift;
+#	;;
+
+#    -l) OPT_l=1; OPT_l_ARG="$2"; LDFLAGS="$LDFLAGS -l\"$2\""; shift
+#    ;;
+
+    -T|--tsconf)
+      shift
+      ;;
+
+    (--) shift; break;;
+    (-*) echolog "$0: error - unrecognized option $1" 1>&2; exit 1;;
+    (*) break;;
+    esac
+    shift
+done
+
+REM_ARG="$@"
+
+
+## begin classify filenames ##
+flist="$@"
+
+a=`echo $flist | sed 's/ /\n/g' | grep -E '.('$SRC_EXT')$'`
+if [[ ! $a = "" ]]; then
+  FLIST_SRC=\"`echo $a | sed 's/ /" "/g' | sed 's/@@/ /g'`\"
+else
+  FLIST_SRC=
+fi
+
+a=`echo $flist | sed 's/ /\n/g' | grep -E '.('$OBJ_EXT')$'`
+if [[ ! $a = "" ]]; then
+  FLIST_OBJ=\"`echo $a | sed 's/ /" "/g' | sed 's/@@/ /g'`\"
+else
+  FLIST_OBJ=
+fi
+
+a=`echo $flist | sed 's/ /\n/g' | grep -E '.('$LIB_EXT')$'`
+echo $a
+if [[ ! $a = "" ]]; then
+  echo "FLIST_LIB not null"
+  FLIST_LIB=-l\"`echo $a | sed 's/ /" -l"/g' | sed 's/@@/ /g'`\"
+  LDFLAGS="$LDFLAGS $FLIST_LIB"
+fi
+
+echo FLIST_SRC=$FLIST_SRC
+echo FLIST_OBJ=$FLIST_OBJ
+echo FLIST_LIB=$FLIST_LIB
+echo LDFLAGS=$LDFLAGS
+## end classify filenames ##
+
+
+#See if we have an all flags command file to be included in the new command.
+#If so, we "bash-evaluate" it to replace bash environment variables that are
+#used in the file and pass in the evaluated command file.
+#ALLFLAGS=""
+#if [[ $OPT_ALLFLAGS_CMD_FILE == "1" ]]; then
+#  file="$OPT_ALLFLAGS_CMD_FILE_ARG"
+#  ALLFLAGS="--cmd_file \"$file\""
+#fi
+#
+CMPLR_FLAGS=""
+if [[ $OPT_CMPLR_FLAGS_FILE == "1" ]]; then
+  file="$CMPLR_FLAGS_FILE_TO_COMPILE"
+  #CMPLR_FLAGS="--cmd_file \"$file\""
+  CMPLR_FLAGS="--cmd_file $file"
+fi
+
+LINKER_FLAGS=""
+if [[ $OPT_LINKER_FLAGS_FILE == "1" ]]; then
+  file="$LINKER_FLAGS_FILE_TO_COMPILE"
+  #LINKER_FLAGS="--cmd_file \"$file\""
+  LINKER_FLAGS="--cmd_file $file"
+fi
+
+CFLAGS="$CFLAGS -ppc -ppa"
+
+echolog "OTHERFLAGS=$OTHERFLAGS" $LOGSUFFIX
+echolog "CFLAGS=$CFLAGS" $LOGSUFFIX
+echolog "LDFLAGS=$LDFLAGS" $LOGSUFFIX
+echolog "REM_ARG=$REM_ARG" $LOGSUFFIX
+#echolog "ALLFLAGS=$ALLFLAGS" $LOGSUFFIX
+echolog "CMPLR_FLAGS=$CMPLR_FLAGS" $LOGSUFFIX
+echolog "LINKER_FLAGS=$LINKER_FLAGS" $LOGSUFFIX
+
+
+
+
+#if [[ $OPT_c == "1" && "$LDFLAGS" != "" ]]; then
+#  echolog "$0: error - linker options cannot be defined when using -c option to the compiler." 1>&2; exit 1;
+#fi
+
+if [[ $OPT_c == "1" ]]; then
+  ############################# 
+  #       COMPILE ONLY 	    #
+  #############################
+  #If the command contains -c, we don't want the linker to be invoked.
+  #Keep everything intact except to remove "-c", since that's the default for cl6x.
+  #Throw an error if any linker options are defined in -c mode.
+  if [[ "$LDFLAGS" != "" || "$LINKER_FLAGS_FILE_TO_COMPILE" != "" || "$LINKER_SCRIPT_FILE_TO_COMPILE" != "" ]]; then
+    #echolog "$0: error - linker options cannot be defined when using -c option to the compiler." 1>&2; exit 1;
+    echolog "$0: WARNING: Linker options cannot be defined when using -c option to the compiler. Ignoring linker options. " 1>&2; 
+    LDFLAGS=""; LINKER_FLAGS_FILE_TO_COMPILE=""; LINKER_SCRIPT_FILE_TO_COMPILE=""
+  #else
+  #  #newcmd="$TI_CC $OTHERFLAGS $CFLAGS \"$REM_ARG\" $ALLFLAGS"
+  #  #newcmd="$TI_CC $OTHERFLAGS $CFLAGS $FLIST_SRC $ALLFLAGS"
+  #  newcmd="$TI_CC $OTHERFLAGS $CFLAGS $CMPLR_FLAGS $FLIST_SRC" 
+  fi
+  newcmd="$TI_CC $OTHERFLAGS $CFLAGS $CMPLR_FLAGS $FLIST_SRC" 
+
+else
+  ############################# 
+  #     COMPILE & LINK        # 
+  #############################
+  #If the command does not contain -c, linker must be invoked. We need to separate
+  #out the compiler and linker options and add a "-z" before the linker options. 
+  #Additionally, we need to move -o <filename> to after -z.
+
+  #taking out the following because -z is expected to be part of the all-command file.
+  #if [[ $OPT_c == "0" && $OPT_z != "1" ]]; then
+  #  LDFLAGS="-z $LDFLAGS";
+  #fi
+  #newcmd="$TI_CC $OTHERFLAGS $CFLAGS \"$REM_ARG\" $ALLFLAGS $LDFLAGS \"$REM_ARG\""
+  ####if [[ ! "$ALLFLAGS" ]]; then
+  if [[ ! "$LINKER_FLAGS" ]]; then
+    LDFLAGS="-z $LDFLAGS"
+  fi
+  LINKER_FLAGS="$LDFLAGS_pre $LINKER_FLAGS"
+  #newcmd="$TI_CC $OTHERFLAGS $CFLAGS $FLIST_SRC $ALLFLAGS $LDFLAGS $FLIST_OBJ"
+  ####newcmd="$TI_CC $OTHERFLAGS $CFLAGS $FLIST_SRC $ALLFLAGS $LDFLAGS $FLIST_OBJ $LINKER_SCRIPT_TO_COMPILE"
+  newcmd="$TI_CC $OTHERFLAGS $CFLAGS $CMPLR_FLAGS $FLIST_SRC $LINKER_FLAGS $LDFLAGS $FLIST_OBJ $LINKER_SCRIPT_FILE_TO_COMPILE"
+fi
+
+echolog "newcmd=$newcmd" $LOGSUFFIX
+
+eval $newcmd

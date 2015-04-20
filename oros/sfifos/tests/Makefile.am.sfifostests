@@ -1,0 +1,249 @@
+#makefile for test binaries for individual blocks
+
+CFLAGS+=-DENABLE_TIMING
+CFLAGS+=-I"$(top_srcdir)/oros/sfifos/lib/"
+
+##bin_PROGRAMS += sfifos_test1.out
+#bin_PROGRAMS += sfifos_test2.out
+#bin_PROGRAMS += sfifos_test3.out
+#bin_PROGRAMS += sfifos_test_s1b.out
+
+#for some reason, the following doesn't work
+#sfifos_test_out_SOURCES = \
+#   $(srcdir)/sfifos_main.c
+
+##sfifos_test1_out_SOURCES = \
+##   oros/common/src/sfifos/tests/test1/main.c \
+##   oros/common/src/sfifos/tests/test1/fifos.c
+##
+##sfifos_test1_out_LDADD = \
+##   osl/lib.osl.a \
+##   oros/common/src/sfifos/lib.orlib.sfifos.a \
+##   orlib/orlib_blocks/lib.orlib.blocks.a
+##
+##
+##sfifos_test1_out_LDFLAGS=\
+##--LINKER_SCRIPT_FILE "`cygpath -w -a \"$(top_srcdir)/oros/common/src/sfifos/tests/linkerscript_sfifostests_common.cmd\"`"
+##
+
+
+##------------------------
+## test2
+##------------------------
+#
+#sfifos_test2_out_SOURCES = \
+#   oros/common/src/sfifos/tests/test2/main.c \
+#   oros/common/src/sfifos/tests/test2/fifos.c 
+#
+#
+#sfifos_test2_out_LDADD = \
+#   osl/lib.osl.a \
+#   oros/common/src/sfifos/lib/edmadriver/lib.oros.common.sfifos.edmadriver.a \
+#   oros/common/src/sfifos/lib/ipc/lib.oros.common.sfifos.ipc.a \
+#   oros/common/src/sfifos/lib.oros.common.sfifos.a \
+#   orlib/orlib_blocks/lib.orlib.blocks.a
+#
+#
+##sfifos_test2_out_LDFLAGS=\
+#--LINKER_SCRIPT_FILE "`cygpath -w -a \"$(top_srcdir)/oros/common/src/sfifos/tests/linkerscript_sfifostests_common.cmd\"`"
+#
+#sfifos_test2_out_LDFLAGS=\
+#--LINKER_SCRIPT_FILE "`_cygpath -w \"$(top_srcdir)/memorymaps/$(MEMORYMAP_FILE)\"`"
+##--LINKER_SCRIPT_FILE "$(top_srcdir)/memorymaps/$(MEMORYMAP_FILE)"
+#
+#
+##------------------------
+## test3
+##------------------------
+#
+#sfifos_test3_out_SOURCES = \
+#   oros/common/src/sfifos/tests/test3/main.c \
+#   oros/common/src/sfifos/tests/test3/fifos.h \
+#   oros/common/src/sfifos/tests/test3/fifos.c \
+#   oros/common/src/sfifos/tests/test3/blockA.h \
+#   oros/common/src/sfifos/tests/test3/blockA.c \
+#   oros/common/src/sfifos/tests/test3/blockB.h \
+#   oros/common/src/sfifos/tests/test3/blockB.c \
+#   oros/common/src/sfifos/tests/test3/blockT.h \
+#   oros/common/src/sfifos/tests/test3/blockT.c 
+#
+#
+#sfifos_test3_out_LDADD = \
+#   osl/lib.osl.a \
+#   oros/common/src/sfifos/lib/edmadriver/lib.oros.common.sfifos.edmadriver.a \
+#   oros/common/src/sfifos/lib/ipc/lib.oros.common.sfifos.ipc.a \
+#   oros/common/src/sfifos/lib.oros.common.sfifos.a \
+#   orlib/orlib_blocks/lib.orlib.blocks.a
+#
+#
+#sfifos_test3_out_LDFLAGS=\
+#--LINKER_SCRIPT_FILE "`_cygpath -w \"$(top_srcdir)/memorymaps/$(MEMORYMAP_FILE)\"`"
+
+#------------------------
+# block library for tests
+#------------------------
+#noinst_LIBRARIES = lib.oros.sfifos.test_blocks.a	#GNU naming convention
+#lib_oros_sfifos_test_blocks_a_SOURCES = \
+#   oros/sfifos/tests/test_blocks/BlockX.c \
+#   oros/sfifos/tests/test_blocks/BlockX.h \
+#   oros/sfifos/tests/test_blocks/BlockX_internal.c \
+#   oros/sfifos/tests/test_blocks/BlockX_internal.h \
+#   oros/sfifos/tests/test_blocks/BlockY.c \
+#   oros/sfifos/tests/test_blocks/BlockY.h \
+#   oros/sfifos/tests/test_blocks/BlockY_internal.c \
+#   oros/sfifos/tests/test_blocks/BlockY_internal.h \
+#   oros/sfifos/tests/test_blocks/BlockTD.c \
+#   oros/sfifos/tests/test_blocks/BlockTD.h \
+#   oros/sfifos/tests/test_blocks/BlockTR.c \
+#   oros/sfifos/tests/test_blocks/BlockTR.h \
+#   oros/sfifos/tests/test_blocks/BlockS.c \
+#   oros/sfifos/tests/test_blocks/BlockS.h \
+#   oros/sfifos/tests/test_blocks/BlockS_internal.c \
+#   oros/sfifos/tests/test_blocks/BlockS_internal.h \
+#   oros/sfifos/tests/test_blocks/BlockM.c \
+#   oros/sfifos/tests/test_blocks/BlockM.h \
+#   oros/sfifos/tests/test_blocks/BlockM_internal.c \
+#   oros/sfifos/tests/test_blocks/BlockM_internal.h \
+#   oros/sfifos/tests/test_blocks/BlockA.c \
+#   oros/sfifos/tests/test_blocks/BlockA.h \
+#   oros/sfifos/tests/test_blocks/BlockA_internal.c \
+#   oros/sfifos/tests/test_blocks/BlockA_internal.h \
+#   oros/sfifos/tests/test_blocks/BlockB.c \
+#   oros/sfifos/tests/test_blocks/BlockB.h \
+#   oros/sfifos/tests/test_blocks/BlockB_internal.c \
+#   oros/sfifos/tests/test_blocks/BlockB_internal.h \
+#   oros/sfifos/tests/test_blocks/BlockAS.c \
+#   oros/sfifos/tests/test_blocks/BlockAS.h \
+#   oros/sfifos/tests/test_blocks/BlockAS_internal.c \
+#   oros/sfifos/tests/test_blocks/BlockAS_internal.h \
+#   oros/sfifos/tests/test_blocks/BlockASI.c \
+#   oros/sfifos/tests/test_blocks/BlockASI.h \
+#   oros/sfifos/tests/test_blocks/BlockASI_internal.c \
+#   oros/sfifos/tests/test_blocks/BlockASI_internal.h
+
+ 
+
+##------------------------
+## test_s1a
+##------------------------
+#include $(top_srcdir)/oros/common/src/sfifos/tests/test_s1a/Makefile.am
+#
+##sfifos_test_s1a.out$(EXEEXT):
+##	echo jj
+##all-local:
+##	if [ -e fifos.txt ]; then createFifos.py; fi
+#
+##http://stackoverflow.com/questions/6284918/how-to-generate-a-source-file-when-building-using-autotools
+#################################
+#EXTRA_DIST = fifos.txt
+##bin_PROGRAMS = prog
+#noinst_PROGRAMS = generator
+#
+## Source files for the generator
+#generator_SOURCES = generator.c ...
+#
+## Source files for prog
+##prog_SOURCES = prog.c ...
+##nodist_prog_SOURCES = generated.c 
+#
+## generated.c is a built source that must be cleaned
+#CLEANFILES = generated.c
+#
+## Build rule for generated.c
+#generated.c: $(srcdir)/input.txt generator$(EXEEXT)
+#        ./generator$(EXEEXT) $(srcdir)/input.txt
+#
+##################################
+#
+#sfifos_test_s1a_out_SOURCES = \
+#   oros/common/src/sfifos/tests/test_s1a/blocks.c \
+#   oros/common/src/sfifos/tests/test_s1a/blocks.h \
+#   oros/common/src/sfifos/tests/test_s1a/main.c
+#
+#
+##   oros/common/src/sfifos/tests/test_s1a/fifos.c \
+##   oros/common/src/sfifos/tests/test_s1a/fifos.h 
+#nodist_sfifos_test_s1a_out_SOURCES = \
+#   oros/common/src/sfifos/tests/test_s1a/__fifos__.h \
+#   oros/common/src/sfifos/tests/test_s1a/__fifos__.c
+#
+#sfifos_test_s1a_out_CLEANFILES = \
+#   oros/common/src/sfifos/tests/test_s1a/__fifos__.h \
+#   oros/common/src/sfifos/tests/test_s1a/__fifos__.c
+#
+#
+#sfifos_test_s1a_out_LDADD = \
+#   osl/lib.osl.a \
+#   oros/common/src/sfifos/lib/edmadriver/lib.oros.common.sfifos.edmadriver.a \
+#   oros/common/src/sfifos/lib/ipc/lib.oros.common.sfifos.ipc.a \
+#   oros/common/src/sfifos/lib.oros.common.sfifos.a \
+#   lib.oros.common.sfifos.test_blocks.a
+##   oros/common/src/sfifos/tests/lib.oros.common.sfifos.test_blocks.a
+##   orlib/orlib_blocks/lib.orlib.blocks.a
+#
+#sfifos_test_s1a_out_CFLAGS = -I"$(top_srcdir)/oros/common/src/sfifos/tests/test_blocks"
+#
+#sfifos_test_s1a_out_LDFLAGS=\
+#--LINKER_SCRIPT_FILE "`_cygpath -w \"$(top_srcdir)/memorymaps/$(MEMORYMAP_FILE)\"`"
+
+
+
+#------------------------
+# test_s1b
+#------------------------
+
+#sfifos_test_s1b_out_SOURCES = \
+#   oros/common/src/sfifos/tests/test_s1b/fifos.c \
+#   oros/common/src/sfifos/tests/test_s1b/fifos.h \
+#   oros/common/src/sfifos/tests/test_s1b/blocks.c \
+#   oros/common/src/sfifos/tests/test_s1b/blocks.h \
+#   oros/common/src/sfifos/tests/test_s1b/main.c
+#
+#
+#sfifos_test_s1b_out_LDADD = \
+#   osl/lib.osl.a \
+#   oros/common/src/sfifos/lib/edmadriver/lib.oros.common.sfifos.edmadriver.a \
+#   oros/common/src/sfifos/lib/ipc/lib.oros.common.sfifos.ipc.a \
+#   oros/common/src/sfifos/lib.oros.common.sfifos.a \
+#   lib.oros.common.sfifos.test_blocks.a
+##   oros/common/src/sfifos/tests/lib.oros.common.sfifos.test_blocks.a
+##   orlib/orlib_blocks/lib.orlib.blocks.a
+#
+#sfifos_test_s1b_out_CFLAGS = -I"$(top_srcdir)/oros/common/src/sfifos/tests/test_blocks"
+#
+#sfifos_test_s1b_out_LDFLAGS=\
+#--LINKER_SCRIPT_FILE "`_cygpath -w \"$(top_srcdir)/memorymaps/$(MEMORYMAP_FILE)\"`"
+#
+
+#------------------------
+# test_s1
+#------------------------
+include $(top_srcdir)/oros/sfifos/tests/test_s1/Makefile.am
+
+#------------------------
+# test_s2
+#------------------------
+#include $(top_srcdir)/oros/common/src/sfifos/tests/test_s2/Makefile.am
+
+#------------------------
+# test_s3
+#------------------------
+#include $(top_srcdir)/oros/common/src/sfifos/tests/test_s3/Makefile.am
+
+#------------------------
+# test_s4
+#------------------------
+#include $(top_srcdir)/oros/common/src/sfifos/tests/test_s4/Makefile.am
+
+#------------------------
+# test_s5
+#------------------------
+#include $(top_srcdir)/oros/common/src/sfifos/tests/test_s5/Makefile.am
+
+#------------------------
+# test_s5p
+#------------------------
+#include $(top_srcdir)/oros/common/src/sfifos/tests/test_s5p/Makefile.am
+
+#SUBDIRS += \
+#	oros/common/src/sfifos/tests/test_s1

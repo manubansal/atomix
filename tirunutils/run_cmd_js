@@ -1,0 +1,2 @@
+#dss oros.js -C -c ../targetconfs/evmbe6616_xds560v2_onechip_memconf1.ccxml -p ../../build-orsys/orilib_unittests/check_ORILIB_PacketSearch_Align.memconf1.none.out
+dss oros.js -g -c ../targetconfs/evmbe6616_xds560v2_onechip_memconf1.ccxml -p ../../build-orsys/orilib_unittests/check_ORILIB_PacketSearch_Align.memconf1.none.out

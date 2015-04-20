@@ -1,0 +1,73 @@
+
+# Atomix project, fifos.or, TODO: insert summary here
+# Copyright (c) 2015 Stanford University
+# Released under the Apache License v2.0. See the LICENSE file for details.
+# Author(s): Manu Bansal
+
+#DEPRECATED: <command==fifo>:<instancename>:<numbufs>:<bufsize_bytes>:<src/dst/sin>:<coreid>
+#<command==fifo>:<instancename>:<numbufs>:<src/dst/sin>:<coreid>
+#<command==fill>:<instanename>:<initial fill data as Uint8's>
+#If initial fill data is provided, each buffer in the queue starts in the filled state, otherwise 
+#each buffer starts in the empty state.
+#DEPRECATED: <command==link>: <instancename>: <instancename>: <pull|push>
+#DEPRECATED: <command==link>: <instancename>: <instancename>: <coreid of the transfer block>
+#fill: ff3: {0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,3,0,0,0,0}
+#
+fifo: ff_kk0:10:sin:0
+fifo: ff_kk1:10:sin:1
+fifo: ff_kk2:10:sin:2
+fifo: ff_kk3:10:sin:3
+#
+fifo: ff_dx_1_1:10:sin:1
+fifo: ff_j_2_2 :10:sin:2
+fifo: ff_j_3_3 :10:sin:3
+#
+fifo: ff_cp_1_1_0:10:src:1
+fifo: ff_cp_1_1_1:10:src:1
+fifo: ff_cp_1_1_2:10:src:1
+fifo: ff_cp_1_1_3:10:src:1
+#
+fifo: ff_cp_2_2_0:10:src:2
+fifo: ff_cp_2_2_1:10:src:2
+fifo: ff_cp_2_2_2:10:src:2
+fifo: ff_cp_2_2_3:10:src:2
+#
+fifo: ff_cp_3_3_0:10:src:3
+fifo: ff_cp_3_3_1:10:src:3
+fifo: ff_cp_3_3_2:10:src:3
+fifo: ff_cp_3_3_3:10:src:3
+#
+fifo: ff_x_1_1: 4: sin:1
+fifo: ff_x_2_2: 4: sin:2
+fifo: ff_x_3_3: 4: sin:3
+fifo: ff_a_2_2: 4: sin:2
+fifo: ff_b_3_3: 4: sin:3
+#
+#
+#The following is required because of blocks that operate on void types.
+#Examples are CP, TD and TR. The problem is that a fifo ff in an example
+#scenario like CP --> ff --> TR will have both input and output types 
+#deduced as void. There is no way to deduce its type without making any
+#assumptions on the functionality of CP and TR blocks. Hence, this type
+#will need to be explicitly indicated at compile time.
+#The following typehints are indicated on fifos. They may be later be 
+#changed so that they are indicated on respective atoms. The two forms 
+#are equivalent.
+#
+typehint:ff_cp_1_1_0:Decision_t
+typehint:ff_cp_1_1_1:Decision_t
+typehint:ff_cp_1_1_2:Decision_t
+typehint:ff_cp_1_1_3:Decision_t
+#
+typehint:ff_cp_2_2_0:Decision_t
+typehint:ff_cp_2_2_1:Decision_t
+typehint:ff_cp_2_2_2:Decision_t
+typehint:ff_cp_2_2_3:Decision_t
+#
+typehint:ff_cp_3_3_0:Decision_t
+typehint:ff_cp_3_3_1:Decision_t
+typehint:ff_cp_3_3_2:Decision_t
+typehint:ff_cp_3_3_3:Decision_t
+#
+typehint: ff_j_2_2: Decision_t
+typehint: ff_j_3_3: Decision_t

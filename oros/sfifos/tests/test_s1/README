@@ -1,0 +1,26 @@
+Scenario s1
+============
+
+Algorithmic flowgraph:
+X --> Y 
+
+System flowgraph:
+X --> T --> Y
+
+
+Schedule 1 (Scenario s1a):
+C1	C2	C3
+--------------------
+X	Y
+T
+
+Schedule 2 (Scenario s1b):
+C1	C2	C3
+--------------------
+X	Y
+	T
+
+Schedule 3 (Scenario s1c):
+C1	C2	C3
+--------------------
+X	Y	T

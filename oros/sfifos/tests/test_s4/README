@@ -1,0 +1,14 @@
+Scenario s4
+===========
+
+Algorithmic flowgraph:
+X --> Y 
+X produces data (source), Y consumes data (sink).
+
+
+Schedule:
+C1	C2
+----------
+X1	Y2
+T	X2
+	Y1	

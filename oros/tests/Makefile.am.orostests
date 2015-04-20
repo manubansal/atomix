@@ -1,0 +1,14 @@
+#makefile for test binaries for individual blocks
+
+#include $(top_srcdir)/Makefile.am.common
+
+#CFLAGS+=-DENABLE_TIMING
+#CFLAGS+=-I"$(top_srcdir)/oros/sfifos/lib/"
+
+
+#------------------------
+# test1i
+#------------------------
+#include $(top_srcdir)/oros/tests/test1i/Makefile.am
+include $(top_srcdir)/oros/tests/test2i/Makefile.am.inc
+

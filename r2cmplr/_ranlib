@@ -1,0 +1,2 @@
+#!/bin/bash
+#Dummy placeholder to fool automake and not run ranlib as part of building a library.

@@ -1,0 +1,168 @@
+#!/usr/bin/python
+
+import sys, os
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import numpy as np
+import pdb
+import operator
+import pickle
+from math import *
+import imp
+
+import matplotlib.patches as mpatches
+from matplotlib.collections import PatchCollection
+
+
+def label(xy, text):
+    #y = xy[1] - 0.15 # shift y-value for label so that it's below the artist
+    #x = xy[0] - 0.05
+    #y = xy[1] # shift y-value for label so that it's below the artist
+    x = xy[0]
+    y = xy[1]
+    plt.text(x, y, text, ha="center", family='sans-serif', size=14)
+
+def core_util_map(tf1, tf2, tf3):
+
+  #plt.figure()
+  plt.figure(figsize=(6, 3))
+  ax = plt.subplot(111)
+  #plt.plot(bin_edges[1:], csum)
+
+  #------------------------------------------------------------------
+  with open(tf3, 'r') as f:
+    lines = f.readlines()
+  core_utils = {}
+  for l in lines:
+    _,coreid,_,util = tuple(l.strip().replace("=",",").split(','))
+    core_utils[int(coreid)] = float(util)
+
+  #------------------------------------------------------------------
+  with open(tf2, 'r') as f:
+    lines = f.readlines()
+
+  pkt_patches = []
+
+
+  #pkt boundaries
+  ts = [tuple(l.strip().replace("=",",").split(',')) for l in lines]
+  ts = [(int(coreid),int(cyin),int(cyout),int(pktn)) for _,coreid,_,st,_,cyin,_,cyout,_,pktn,_,repn,_,lb in ts]
+  n_pkts = max([pktn for _,_,_,pktn in ts]) + 1
+  pkt_boundaries = []
+  for pktn in range(n_pkts):
+    tsn = [t for t in ts if t[3] == pktn]
+    t_pkt_in = int(tsn[0][1])
+    t_pkt_out = int(tsn[-1][2])
+    pkt_boundaries.append((t_pkt_in, t_pkt_out))
+    #xy_lower_left = (t_pkt_in, 0)
+    #width = t_pkt_out - t_pkt_in
+    #height = 1.0
+    #rect = mpatches.Rectangle(xy_lower_left, width, height)
+    #pkt_patches.append(rect)
+
+    #plot only one pkt
+    #break
+  print pkt_boundaries
+  #sys.exit(1)
+
+  #------------------------------------------------------------------
+  with open(tf1, 'r') as f:
+    lines = f.readlines()
+
+  patches = []
+
+  t = [tuple(l.strip().replace("=",",").split(',')) for l in lines]
+
+  #common fields, used ahead too
+  #max_cyout = max([float(cyout) for _,_,_,_,_,cyout in t])
+  max_coreid = max([float(coreid) for _,coreid,_,_,_,_ in t])
+  first_pkt_in, first_pkt_out = pkt_boundaries[0]
+  first_pkt_dur = first_pkt_out - first_pkt_in
+
+  #core util markers
+  n_cores = max_coreid + 1
+  #height = (1.0/n_cores) * 0.9
+  height = (0.96/n_cores)
+  for _,coreid,_,cyin,_,cyout in t:
+    #print coreid, cyin, cyout
+    coreid = float(coreid)/n_cores
+    #cyin = float(cyin)/max_cyout
+    #cyout = float(cyout)/max_cyout
+    cyin = (float(cyin) - first_pkt_in)/first_pkt_dur
+    cyout = (float(cyout) - first_pkt_in)/first_pkt_dur
+    #xy_lower_left = (cyin, coreid + 0.05/n_cores)
+    xy_lower_left = (cyin, height * coreid * n_cores + 0.02)
+    width = cyout - cyin
+    # add a rectangle
+
+    ####rect = mpatches.Rectangle(xy_lower_left, width, height, ec="none")
+    rect = mpatches.Rectangle(xy_lower_left, width, height, ec="none", linewidth=0)
+
+    #rect = mpatches.Rectangle(xy_lower_left, width, height)
+    print xy_lower_left, width, height
+    patches.append(rect)
+    #label(xy_lower_left, "Rectangle")
+
+  height = 1/n_cores
+  ylabels = []
+  for coreid in range(int(n_cores)):
+    xy_lower_left = (-0.05, coreid*height + height/2)
+    lb = "Core %s\nUtil=%3.1f%%" % (coreid, core_utils[coreid])
+    #label(xy_lower_left, lb)
+    ylabels.append(lb)
+
+  #label((0.5,-0.1), "Cycles/Time")
+  #d = first_pkt_dur/10.0
+  xs = [x/10.0 for x in range(0,12,2)]
+  ticks = [int(x * first_pkt_dur) for x in xs]
+  #plt.xticks(xs, ticks, rotation="vertical")
+  plt.xticks(xs, ticks)
+
+  ys = [0,1,2,3]
+  ys = [0.125 + 0.25 * y for y in ys]
+  plt.yticks(ys, ylabels)
+  #------------------------------------------------------------------
+
+
+
+  #------------------------------------------------------------------
+  #colors = np.linspace(0, 1, len(pkt_patches))
+  colors = np.linspace(0.5, 0.5, len(pkt_patches))
+  collection = PatchCollection(pkt_patches, cmap=plt.cm.gray, alpha=0.1)
+  collection.set_array(np.array(colors))
+  ax.add_collection(collection)
+  #------------------------------------------------------------------
+  #colors = np.linspace(0, 1, len(patches))
+  #collection = PatchCollection(patches, cmap=plt.cm.hsv, alpha=0.5)
+  colors = np.linspace(1, 1, len(patches))
+  collection = PatchCollection(patches, cmap=plt.cm.gray, alpha=1.0)
+  collection.set_array(np.array(colors))
+  ax.add_collection(collection)
+  #------------------------------------------------------------------
+
+  #plt.ylabel('Core')
+  plt.xlabel('Cycles')
+  #plt.axis('off')
+  #plt.title("Core utilization map")
+
+  plt.tight_layout()
+
+
+  #plt.title('#pkts: %d' % len(completion_times))
+  #plt.grid(True)
+  plt.savefig('__core_util_map.png')
+  plt.savefig('__core_util_map.pdf')
+
+def main():
+  cmd = sys.argv[1]
+  tf1 = sys.argv[2]
+  tf2 = sys.argv[3]
+  tf3 = sys.argv[4]
+
+  if cmd == 'core-util-map':	#core-utilization-map
+    core_util_map(tf1, tf2, tf3)
+
+if __name__ == "__main__":
+  main()
+

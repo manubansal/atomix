@@ -1,0 +1,23 @@
+Scenario s2a
+============
+
+Algorithmic flowgraph:
+X --> A --> B --> Y 
+X produces data (source), A transforms data, B also transforms by doing the inverse operation as A, Y consumes data (sink).
+
+
+Schedule:
+C1	C2
+----------
+X
+S
+T1
+A1	A2
+B1	B2
+T2
+M
+Y
+
+System flowgraph:
+X --> S ---------> A1 --> B1 ---------> M --> Y
+        --> T1 --> A2 --> B2 --> T2 --> 

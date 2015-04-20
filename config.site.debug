@@ -1,0 +1,4 @@
+#!/bin/bash
+build="i686-pc-linux-gnu"
+CFLAGS=" -I\"${CG_TOOL_ROOT_WIN}/include\" -I\"${CG_TOOL_ROOT_WIN}/lib\""
+

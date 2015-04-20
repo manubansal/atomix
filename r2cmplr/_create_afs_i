@@ -1,0 +1,1930 @@
+#!/usr/bin/python
+
+from _scrape_b_i import *
+from _linker_conf import *
+from _gencode_wblock import *
+from _db import *
+from _codegen_write_out import *
+from _util import *
+from _gencode_states import *
+from _debug_ts_opt import *
+from _gencode_atoms import *
+from _program_analyzer import *
+
+import csv
+import os
+import sys
+import sqlite3
+import subprocess
+import re
+
+
+
+IS_INTERACTIVE=False
+LOGFILE="pxc.log"
+
+#initStateName = ''
+#initIterCount = 1
+ilib_include_path = ''
+APPDIRNAME = ''
+
+#TIMESTAMP_CONFIG = {}
+
+#set default value here, but the effective value will be set based on the makefile hash defines
+FIFODS_IN_L1SRAM = True
+#FIFODS_IN_L1SRAM = False
+
+wires_rerw = {}
+wires_reic = {}
+wires_async = {}
+
+
+
+
+def create_atom_sym_list(atom_code_table, atoms_to_optimize):
+  sym_list = []
+  for atom in atoms_to_optimize:
+    atomsyms = set(atom_code_table[atom])
+    sym_list.extend(atomsyms)
+  for sym in sym_list:
+    logger.debug(sym)
+  #raw_input()
+  return sym_list
+
+
+def makefile_hashdef_logic(defined_symbols):
+  global FIFODS_IN_L1SRAM
+
+  GEN_BLOCK_DEBUG = False
+  if 'DEBUG_ATOMS' in defined_symbols:
+    GEN_BLOCK_DEBUG = True
+
+  HAVE_L1PSRAM = 0
+  HAVE_L1DSRAM = 0
+
+  ###########################
+  L1P_nFlagsSet = 0
+
+  if 'L1P_SRAM_ZERO' in defined_symbols:
+    logger.info('All L1P will be cache.')
+    L1P_nFlagsSet += 1
+
+  if 'L1P_DISABLE' in defined_symbols:
+    logger.info('All L1P will be disabled.')
+    L1P_nFlagsSet += 1
+
+  if 'L1P_SRAM_16K' in defined_symbols:
+    logger.info('L1P will be 16K cach %se % 16K SRAM.')
+    L1P_nFlagsSet += 1
+    HAVE_L1PSRAM = 16
+
+  if 'L1P_SRAM_32K' in defined_symbols:
+    logger.info('L1P will be all SRAM.')
+    L1P_nFlagsSet += 1
+    HAVE_L1PSRAM = 32
+
+  if L1P_nFlagsSet > 1:
+    print_line()
+    logger.error("Multiple L1P flags set.")
+    print_line()
+    sys.exit(1)
+
+  ###########################
+  L1D_nFlagsSet = 0
+
+  if 'L1D_SRAM_ZERO' in defined_symbols:
+    L1D_nFlagsSet += 1
+    FIFODS_IN_L1SRAM = False
+    logger.info('All L1D will be cache.')
+    logger.info('FIFODS_IN_L1SRAM=%s' % FIFODS_IN_L1SRAM)
+    confirm(IS_INTERACTIVE)
+
+
+  if 'L1D_DISABLE' in defined_symbols:
+    L1D_nFlagsSet += 1
+    FIFODS_IN_L1SRAM = False
+    logger.info('All L1D will be disabled.')
+    logger.info('FIFODS_IN_L1SRAM=%s' % FIFODS_IN_L1SRAM)
+    confirm(IS_INTERACTIVE)
+
+  if 'L1D_SRAM_16K' in defined_symbols:
+    L1D_nFlagsSet += 1
+    if 'FORCE_NO_L1D_SRAM_ALLOC' in defined_symbols:
+      FIFODS_IN_L1SRAM = False
+      HAVE_L1DSRAM = 0
+    else:
+      FIFODS_IN_L1SRAM = True
+      HAVE_L1DSRAM = 16
+    logger.info('L1D will be 16K cache, 16K SRAM.')
+    logger.info('FIFODS_IN_L1SRAM=%s' % FIFODS_IN_L1SRAM)
+    confirm(IS_INTERACTIVE)
+
+  if 'L1D_SRAM_24K' in defined_symbols:
+    L1D_nFlagsSet += 1
+    if 'FORCE_NO_L1D_SRAM_ALLOC' in defined_symbols:
+      FIFODS_IN_L1SRAM = False
+      HAVE_L1DSRAM = 0
+    else:
+      FIFODS_IN_L1SRAM = True
+      HAVE_L1DSRAM = 24 
+    logger.info('L1D will be 24K SRAM.')
+    logger.info('FIFODS_IN_L1SRAM=%s' % FIFODS_IN_L1SRAM)
+    confirm(IS_INTERACTIVE)
+
+  if 'L1D_SRAM_28K' in defined_symbols:
+    L1D_nFlagsSet += 1
+    if 'FORCE_NO_L1D_SRAM_ALLOC' in defined_symbols:
+      FIFODS_IN_L1SRAM = False
+      HAVE_L1DSRAM = 0
+    else:
+      FIFODS_IN_L1SRAM = True
+      HAVE_L1DSRAM = 28
+    logger.info('L1D will be 28K SRAM.')
+    logger.info('FIFODS_IN_L1SRAM=%s' % FIFODS_IN_L1SRAM)
+    confirm(IS_INTERACTIVE)
+
+  if 'L1D_SRAM_32K' in defined_symbols:
+    L1D_nFlagsSet += 1
+    if 'FORCE_NO_L1D_SRAM_ALLOC' in defined_symbols:
+      FIFODS_IN_L1SRAM = False
+      HAVE_L1DSRAM = 0
+    else:
+      FIFODS_IN_L1SRAM = True
+      HAVE_L1DSRAM = 32
+    logger.info('L1D will be all SRAM.')
+    logger.info('FIFODS_IN_L1SRAM=%s' % FIFODS_IN_L1SRAM)
+    confirm(IS_INTERACTIVE)
+
+  if L1D_nFlagsSet > 1:
+    print_line()
+    logger.error("Multiple L1D flags set.")
+    print_line()
+    sys.exit(1)
+  ###########################
+
+  return HAVE_L1PSRAM, HAVE_L1DSRAM, GEN_BLOCK_DEBUG
+
+
+############################################################################################
+#Create fifos from abstract declaration
+############################################################################################
+
+
+def code_h_fifo_declaration(fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_core_id):
+  code_h = ''
+  code_h += 'extern FIFO_Handle far %s;\n' % fifo_name
+  code_h += '\n'
+
+  code_h += '//Local caching of static fifo data\n'
+  code_h += 'extern FIFO_BufferState far %s_bufferStates[%s];\n' % (fifo_name, fifo_n_buffers)
+  code_h += 'extern Uint32 far %s_nBuffersInFifo;\n' % fifo_name
+  code_h += '\n'
+
+  return code_h
+
+
+def code_c_fifo_declaration(fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_core_id, is_multicore, fifo_optimized):
+  code_c = ''
+
+  #-------------------------------------------------------
+  # Configuration for selecting fifo data structure pointers memory 
+  #-------------------------------------------------------
+  if (FIFODS_IN_L1SRAM):
+    ALIASED_LOCAL_MEMORY_SECTION 			= '.dataL1DSRAM'				#L1 SRAM
+  else:
+    ALIASED_LOCAL_MEMORY_SECTION 			= '.data'					#L2 SRAM
+
+
+  #-------------------------------------------------------
+  # Configuration for selecting fifo data structure memory
+  #-------------------------------------------------------
+  if (not is_multicore):
+    if (FIFODS_IN_L1SRAM):
+      SPECIFIC_FIFODS_MEMORY_SECTION			= '.gem%d_dataL1DSRAM' % int(fifo_core_id) 	#L1 SRAM
+    else:
+      SPECIFIC_FIFODS_MEMORY_SECTION			= '.gem%d_data' % int(fifo_core_id) 		#L2 SRAM
+  else:
+    SPECIFIC_FIFODS_MEMORY_SECTION			= '.shared_mem_noncacheable'
+  #-------------------------------------------------------
+
+  #-------------------------------------------------------
+  # Configuration for selecting fifo buffer memory
+  #-------------------------------------------------------
+  if (fifo_optimized):
+    SPECIFIC_BUFMEM_MEMORY_SECTION			= '.gem%d_dataL1DSRAM' % int(fifo_core_id)	#L1 SRAM, specific section name obtained by prefix .gem<n>_, 
+  else:
+    SPECIFIC_BUFMEM_MEMORY_SECTION			= '.gem%d_data' % int(fifo_core_id)		#L2 SRAM, specific section name obtained by prefix .gem<n>_, 
+  #-------------------------------------------------------
+
+
+
+
+  #------------------------- allocation of fifo data structure pointers ---------------------------
+  #L2 allocation of data structures
+  ###code_c += '#pragma DATA_SECTION(%s_state, ".gem%d_data");\n' % (fifo_name, int(fifo_core_id))
+  ###code_c += '#pragma DATA_SECTION(%s_bufferStates, ".gem%d_data");\n' % (fifo_name, int(fifo_core_id))
+
+  #L1D allocation of fifo and buffer data structures
+  #code_c += '#pragma DATA_SECTION(%s, ".dataL1DSRAM");\n' % (fifo_name)
+
+  #code_c += '#pragma DATA_SECTION(%s_state, ".gem%d_dataL1DSRAM");\n' % (fifo_name, int(fifo_core_id))
+  #code_c += '#pragma DATA_SECTION(%s_bufferStates, ".gem%d_dataL1DSRAM");\n' % (fifo_name, int(fifo_core_id))
+
+  #Non-cacheable shared L2 SRAM allocation of data structures
+  #code_c += '#pragma DATA_SECTION(%s, ".shared_mem");\n' % (fifo_name)
+  ##code_c += '#pragma DATA_SECTION(%s_state, ".shared_mem_noncacheable");\n' % (fifo_name)
+  ##code_c += '#pragma DATA_SECTION(%s_bufferStates, ".shared_mem_noncacheable");\n' % (fifo_name)
+
+  code_c += '#pragma DATA_SECTION(%s, "%s");\n' % (fifo_name, ALIASED_LOCAL_MEMORY_SECTION)
+  code_c += 'FIFO_Handle %s;\n' % fifo_name
+  code_c += '\n'
+  #-------------------------------------------------------------------------------------------
+
+  #------------------------- allocation of optimization data structures ---------------------------
+  code_c += '//Local caching of static fifo data\n'
+  code_c += '#pragma DATA_SECTION(%s_nBuffersInFifo, "%s");\n' % (fifo_name, ALIASED_LOCAL_MEMORY_SECTION)
+  code_c += 'Uint32 far %s_nBuffersInFifo = %d;\n' % (fifo_name, fifo_n_buffers)
+  code_c += '\n'
+  #-------------------------------------------------------------------------------------------
+
+  #------------------------- allocation of buffer memory ---------------------------
+  code_c += '#pragma DATA_SECTION(%s_state, "%s");\n' % (fifo_name, SPECIFIC_FIFODS_MEMORY_SECTION)
+  code_c += '#pragma DATA_SECTION(%s_bufferStates, "%s");\n' % (fifo_name, SPECIFIC_FIFODS_MEMORY_SECTION)
+  code_c += '#pragma DATA_ALIGN(%s_state, 8);\n' % fifo_name
+  code_c += '#pragma DATA_ALIGN(%s_bufferStates, 8);\n' % fifo_name
+  code_c += 'FIFO_State far %s_state;\n' % fifo_name 
+  code_c += 'FIFO_BufferState far %s_bufferStates[%s];\n' % (fifo_name, fifo_n_buffers)
+  #-------------------------------------------------------------------------------------------
+
+
+  #------------------------- allocation of buffer memory ---------------------------
+  code_c += '#pragma DATA_SECTION(%s_mem, "%s");\n' % (fifo_name, SPECIFIC_BUFMEM_MEMORY_SECTION)
+  code_c += '#pragma DATA_ALIGN(%s_mem, 8);\n' % fifo_name
+  fifo_total_size_in_bytes = '(%s) * %d' % (fifo_buffer_size_in_bytes, fifo_n_buffers)
+  code_c += 'Uint8 far %s_mem[%s];\n' % (fifo_name, fifo_total_size_in_bytes)
+  code_c += '\n'
+  #-------------------------------------------------------------------------------------------
+
+
+  return code_c
+
+def code_c_fifo_declarationFilled(fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_core_id, fifo_data, is_multicore):
+  logger.error('Filled fifos are no longer supported.')
+  sys.exit(1)
+
+  if (is_multicore):
+    logger.error('Filled multicore queue not yet handled')
+    sys.exit(1)
+
+  code_c = ''
+
+  #------------------------- allocation of fifo data structures ---------------------------
+  #code_c += '#pragma DATA_SECTION(%s, ".shared_mem");\n' % (fifo_name)
+  code_c += '#pragma DATA_SECTION(%s_state, ".gem%d_data");\n' % (fifo_name, int(fifo_core_id))
+  #code_c += 'FIFO_Handle %s;\n' % fifo_name
+  code_c += 'FIFO_Handle far %s;\n' % fifo_name
+  code_c += 'FIFO_State far %s_state;\n' % fifo_name 
+  code_c += 'FIFO_BufferState far %s_bufferStates[%s];\n' % (fifo_name, fifo_n_buffers)
+  #-------------------------------------------------------------------------------------------
+
+  code_c += '#pragma DATA_SECTION(%s_mem, ".gem%d_data");\n' % (fifo_name, int(fifo_core_id))
+  code_c += '#pragma DATA_ALIGN(%s_mem, 8);\n' % fifo_name
+  fifo_total_size_in_bytes = int(fifo_n_buffers) * int(fifo_buffer_size_in_bytes)
+  code_c += 'Uint8 far %s_mem[%s] = %s;\n' % (fifo_name, fifo_total_size_in_bytes, fifo_data)
+  code_c += '\n'
+
+  return code_c
+
+def code_c_fifo_setupPtrs(fifo_name):
+  code_c = ''
+
+  code_c += '  %s = &%s_state;\n' % (fifo_name, fifo_name)
+  return code_c
+
+def code_c_fifo_setup(fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_type, fifo_core_id):
+  code_c = ''
+
+#  void FIFO_setupFifo(
+#      FIFO_Handle ff,
+#      FIFO_State *ff_state,
+#      Uint8 ff_mem[],
+#      FIFO_BufferState ff_bufferStates[],
+#      Uint32 ff_BUFFER_SIZE_IN_BYTES,
+#      Uint32 ff_N_BUFFERS,
+#      FIFO_TYPE_SRC_OR_DST ff_type
+#      ) {
+
+  #code_c += '  FIFO_setupFifo(%s, &%s_state, %s_mem, %s_bufferStates, %s, %s, %s);\n' % \
+  #	(fifo_name, fifo_name, fifo_name, fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, 'NONE')
+  #code_c += '  FIFO_setupFifo(%s, &%s_state, %s_mem, %s_bufferStates, %s, %s, %s);\n' % \
+
+  #code_c += '  if (DNUM == %s) {\n' % fifo_core_id
+  #code_c += '  if (DNUM == 0) {\n'
+
+  #code_c += '  %s = &%s_state;\n' % (fifo_name, fifo_name)
+  #code_c += '  CACHE_wbInvAllL1d(CACHE_WAIT);\n'	#touching shared memory
+  #code_c += '  CACHE_wbAllL1d(CACHE_WAIT);\n'	#touching shared memory
+  #code_c += '  CACHE_wbAllL2(CACHE_WAIT);\n'	#touching shared memory
+  if fifo_type == 'src':
+    fifo_c_type = 'FIFO_TYPE_SRC'
+  elif fifo_type == 'dst':
+    fifo_c_type = 'FIFO_TYPE_DST'
+  elif fifo_type == 'sin':
+    fifo_c_type = 'FIFO_TYPE_SINGULAR'
+  else:
+    logger.error('Bad fifo type')
+    exit(1)
+
+  code_c += '  FIFO_setupFifo(%s, %s_mem, %s_bufferStates, %s, %s, %s, %s, 0);\n' % \
+  	(fifo_name, fifo_name, fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_c_type, fifo_core_id)
+  #code_c += '  }\n\n'
+  return code_c
+
+def code_c_fifo_setupFilled(fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_type, fifo_core_id):
+  code_c = ''
+
+  if fifo_type == 'src':
+    fifo_c_type = 'FIFO_TYPE_SRC'
+  elif fifo_type == 'dst':
+    fifo_c_type = 'FIFO_TYPE_DST'
+  elif fifo_type == 'sin':
+    fifo_c_type = 'FIFO_TYPE_SINGULAR'
+  else:
+    logger.error('Bad fifo type')
+    exit(2)
+
+  code_c += '  FIFO_setupFifo(%s, %s_mem, %s_bufferStates, %s, %s, %s, %s, 1);\n' % \
+  	(fifo_name, fifo_name, fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_c_type, fifo_core_id)
+  #code_c += '  }\n\n'
+  return code_c
+
+def code_c_link_declaration(link_src, link_dst, link_owner, n_links, link_src_coreid):
+  code = ''
+  #code += '#pragma DATA_SECTION(link_%s_%s_descriptors, ".shared_mem");\n' % (link_src, link_dst)
+
+  code += '#pragma DATA_SECTION(link_%s_%s_descriptors, ".gem%d_data");\n' % (link_src, link_dst, link_src_coreid)
+  code += 'IPC_LinkDescriptor link_%s_%s_descriptors[%d];\n' % (link_src, link_dst, int(n_links))
+  return code
+
+def code_c_link_setup(link_src, link_dst, link_owner):
+  code = ''
+  code += '  FIFO_linkFifos(%s, %s, %s, link_%s_%s_descriptors);\n' % (link_src, link_dst, link_owner, link_src, link_dst)
+  #code += '  CACHE_wbInvAllL1d(CACHE_WAIT);\n'	#since we are touching a shared memory data structure, 
+  #code += '  CACHE_wbAllL1d(CACHE_WAIT);\n'	#since we are touching a shared memory data structure, 
+  						#we need to manually push the changes back to L2SHM
+  #code += '  CACHE_wbAllL2(CACHE_WAIT);\n'	#touching shared memory
+  return code
+
+
+
+def deduce_fifo_buftypes_many(dbo):
+  #db.execute('''Create table wires (instancename, fifolist,
+  #	FOREIGN KEY(instancename) REFERENCES atoms(instancename)
+  #	)''')
+  db_wires = dbo.db_select_wires()
+  #db_atoms = dbo.db_select_atoms()
+  for row in db_wires:
+    atomname = row["instancename"]
+    fifolist = row["fifolist"]
+    fifolist = fifolist.split(',')
+    db_atomrow = dbo.db_select_atom_row(atomname)
+    if (len(db_atomrow) > 1):
+      print_line()
+      logger.debug("Too many wire definitions for the same atom")
+      print_line()
+      exit(3)
+    db_atomrow = db_atomrow[0]
+    inptstr = db_atomrow["inptstr"]
+    outtstr = db_atomrow["outtstr"]
+    conftstr = db_atomrow["conftstr"]
+    hasConf = db_atomrow["hasConf"]
+    optimized_atom = db_atomrow["optimized_atom"]
+
+    inp_t_list = []
+    out_t_list = []
+    conf_t_list = []
+    if inptstr != '':
+      inp_t_list  = inptstr.split(',')
+    if outtstr != '':
+      out_t_list  = outtstr.split(',')
+    if conftstr != '':
+      conf_t_list = conftstr.split(',')
+    n_inps = len(inp_t_list)
+    n_outs = len(out_t_list)
+    n_conf = len(conf_t_list)
+    #db.execute('Create table fifos_buftypes_many (instancename, atomname, buftype, inpouttype)')
+    inpouttype_list = []
+    for i in range(n_inps):
+      inpouttype_list.append('inp')
+    for i in range(n_outs):
+      inpouttype_list.append('out')
+    for i in range(n_conf):
+      inpouttype_list.append('conf')
+    n_fifos = len(fifolist)
+    logger.debug('fifolist=%s' % fifolist)
+    logger.debug('n_fifos=%d' % n_fifos)
+    t_list = []
+    #t_list = (inp_t_list, out_t_list, conf_t_list)
+    t_list = inp_t_list + out_t_list + conf_t_list
+    #t_list.append(inp_t_list)
+    #t_list.append(out_t_list)
+    #t_list.append(conf_t_list)
+    for i in range(n_fifos):
+      fifoname = fifolist[i]
+      if fifoname == "null":
+        continue
+      if i >= len(t_list):
+        print_line()
+        logger.error('fifo %s is fifo index %d (0-based) wired to %s, but block signature of the atom parses to only %d port(s)' % \
+		(fifoname, i, atomname, len(t_list)))
+        print_line()
+	exit(11)
+      buftype  = t_list[i]
+      inpouttype = inpouttype_list[i]
+      row = (fifoname, atomname, buftype, inpouttype, optimized_atom)
+      logger.debug(row)
+      dbo.db_insert_fifos_buftypes_many_row(row)
+
+def deduce_fifo_buftypes_unique(dbo):
+  #db.execute('Create table fifos_buftypes_unique (fifoname, buftype)')
+  #db.execute('Create table fifos (instancename PRIMARY KEY, numbufs INTEGER, srcdsttype STRING, coreid INTEGER)')
+  db_fifos = dbo.db_select_fifos_untyped()
+  print_line()
+  for row in db_fifos:
+    fifoname = row["instancename"]
+    db_fifo_buftypes = dbo.db_select_fifo_buftypes(fifoname)
+    fifo_optimized = dbo.db_is_fifo_wired_to_optimized_atom(fifoname)
+
+    if len(db_fifo_buftypes) > 1:
+      print_line()
+      logger.error('fifo %s buffer type resolved to multiple non-void typenames' % fifoname)
+      print_line()
+      db_fifo_buftypes_debug = dbo.db_select_fifo_buftypes_debug(fifoname)
+      for row in db_fifo_buftypes_debug:
+	fifoname = row["instancename"]
+	buftype = row["buftype"]
+	logger.error("fifoname: %s, buftype: %s" % (fifoname, buftype))
+      exit(4)
+    if len(db_fifo_buftypes) == 0:
+      print_line()
+      logger.error('fifo %s buffer type could not be resolved to any non-void typename' % fifoname)
+      print_line()
+      db_fifo_buftypes_debug = dbo.db_select_fifo_buftypes_debug(fifoname)
+      for row in db_fifo_buftypes_debug:
+	logger.error(row)
+      exit(5)
+    row = db_fifo_buftypes[0]
+    buftype = row["buftype"]
+    row = (fifoname, buftype, fifo_optimized)
+    dbo.db_insert_fifos_buftype_unique_row(row)
+
+def deduce_multicore_fifos(dbo):
+  db_wires_joined_atoms = dbo.db_select_wires_joined_atoms()
+  db_fifos = dbo.db_select_fifos_untyped()
+
+  fifo_accessed_remotely_by_any_atom = {}
+  for row in db_fifos:
+    fifoname = row['instancename']
+    fifo_accessed_remotely_by_any_atom[fifoname] = False
+
+  for row in db_wires_joined_atoms:
+    logger.debug(row)
+    atomname = row["instancename"]
+    atomcoreid = row["coreid"]
+    blockname = row["typename"]
+    if blockname == "BlockNOP":
+      continue
+    fifolist = row["fifolist"]
+    fifolist = fifolist.split(',')
+    logger.debug(fifolist)
+
+    n_fifos = len(fifolist)
+    for i in range(n_fifos):
+      fifoname = fifolist[i]
+      if fifoname == "null":
+        continue
+      #fifocoreid = [row['coreid'] for row in db_fifos if row['instancename'] == fifoname][0]
+      fiforows = [row for row in db_fifos if row['instancename'] == fifoname]
+      if (len(fiforows) == 0):
+	print_line()
+        logger.error('Wired fifo %s is not defined.' % fifoname)
+	print_line()
+	sys.exit(1)
+      elif (len(fiforows) > 1):
+	print_line()
+        logger.error('Wired fifo %s has multiple definitions.' % fifoname)
+	print_line()
+	sys.exit(1)
+
+      fifocoreid = fiforows[0]['coreid']
+
+      fifo_accessed_remotely = (atomcoreid != fifocoreid)
+      fifo_accessed_remotely_by_any_atom[fifoname] = fifo_accessed_remotely or fifo_accessed_remotely_by_any_atom[fifoname]
+
+      logger.debug('atomcoreid: %s' % atomcoreid)
+      logger.debug('fifocoreid: %s' % fifocoreid)
+
+  logger.debug(fifo_accessed_remotely_by_any_atom)
+  for fifoname in fifo_accessed_remotely_by_any_atom.keys():
+    fifo_is_multicore = fifo_accessed_remotely_by_any_atom[fifoname]
+    dbo.db_insert_fifo_is_multicore_row((fifoname, fifo_is_multicore))
+
+
+#deduce the wired-block types and the wblock type for each atom
+def deduce_wblocks(dbo):
+  #db_wires = dbo.db_select_wires()
+  db_wires_joined_atoms = dbo.db_select_wires_joined_atoms()
+  db_fifos = dbo.db_select_fifos_untyped()
+
+  db_fifos_whether_multicore = dbo.db_select_fifos_whether_multicore()
+  fifos_whether_multicore = {}
+  for row in db_fifos_whether_multicore:
+    fifoname = row['fifoname']
+    is_multicore = row['is_multicore']
+    fifos_whether_multicore[fifoname] = is_multicore
+
+  fifo_access_table = []
+
+  for row in db_wires_joined_atoms:
+    logger.debug(row)
+    atomname = row["instancename"]
+    atomcoreid = row["coreid"]
+    blockname = row["typename"]
+    fifolist = row["fifolist"]
+    fifolist = fifolist.split(',')
+    db_atomrow = dbo.db_select_atom_row(atomname)
+    if (len(db_atomrow) > 1):
+      print_line()
+      logger.error("Too many wire definitions for the same atom")
+      print_line()
+      exit(3)
+    db_atomrow = db_atomrow[0]
+    inptstr = db_atomrow["inptstr"]
+    outtstr = db_atomrow["outtstr"]
+    conftstr = db_atomrow["conftstr"]
+    hasConf = db_atomrow["hasConf"]
+    inp_t_list = []
+    out_t_list = []
+    conf_t_list = []
+    if inptstr != '':
+      inp_t_list  = inptstr.split(',')
+    if outtstr != '':
+      out_t_list  = outtstr.split(',')
+    if conftstr != '':
+      conf_t_list = conftstr.split(',')
+    n_inps = len(inp_t_list)
+    n_outs = len(out_t_list)
+    n_conf = len(conf_t_list)
+    #db.execute('Create table fifos_buftypes_many (instancename, atomname, buftype, inpouttype)')
+    inpouttype_list = []
+    for i in range(n_inps):
+      inpouttype_list.append('inp')
+    for i in range(n_outs):
+      inpouttype_list.append('out')
+    for i in range(n_conf):
+      inpouttype_list.append('conf')
+    n_fifos = len(fifolist)
+    t_list = []
+    #t_list = (inp_t_list, out_t_list, conf_t_list)
+    t_list = inp_t_list + out_t_list + conf_t_list
+    #t_list.append(inp_t_list)
+    #t_list.append(out_t_list)
+    #t_list.append(conf_t_list)
+    mnemonic = {'inp':'r', 'out':'w', 'conf':'c'}
+
+    mnemonic_weakremote = {'inp':'s', 'out':'x', 'conf':'c'}		
+    #fifo data structures are remote (shared memory) but fifo data is local
+
+    mnemonic_strongremote = {'inp':'t', 'out':'y', 'conf':'c'}		
+    #fifo data structures and fifo data are both remote
+
+    mnemonic_to_mnemonic_rerw      = {'r':'u', 's':'v', 'w':'m', 'x':'n'}
+    mnemonic_to_mnemonic_reic      = {'r':'o', 's':'p', 'w':'q', 'x':'z'}
+    mnemonic_to_mnemonic_async_get = {'r':'d', 's':'e', 'w':'f', 'x':'g'}
+    mnemonic_to_mnemonic_async_put = {'r':'h', 's':'i', 'w':'k', 'x':'l'}
+    mnemonic_to_mnemonic_async_gic = {'r':'0', 's':'1', 'w':'2', 'x':'3'}
+    mnemonic_to_mnemonic_async_pic = {'r':'4', 's':'5', 'w':'6', 'x':'7'}
+    mnemonic_to_mnemonic_async_qic = {'r':'8', 's':'9'}
+
+    fifo_access_signature = []
+    #has_rerw = False
+    for i in range(n_fifos):
+      fifoname = fifolist[i]
+      if fifoname == "null":
+        continue
+      buftype  = t_list[i]
+      inpouttype = inpouttype_list[i]
+
+
+      is_rerw_fifo_wire = False		#re-read or re-write
+      if atomname in wires_rerw.keys():
+        if fifoname+"+" in wires_rerw[atomname]:
+	  is_rerw_fifo_wire = True
+	  ##if inpouttype != 'inp':
+	  ##  print_line()
+	  ##  logger.error("fifo wiring operator + is only allowed on inp fifos")
+	  ##  logger.error("bad wiring for atom %s on %s %s+"  % (atomname,inpouttype,fifoname))
+	  ##  print_line()
+	  ##  sys.exit(1)
+	  logger.debug("found good rerw fifo wiring: %s:%s" % (atomname,fifolist))
+	  #import pdb; pdb.set_trace()
+
+      is_reic_fifo_wire = False		#re-read or re-write with increment
+      if atomname in wires_reic.keys():
+        if fifoname+"*" in wires_reic[atomname]:
+	  is_reic_fifo_wire = True
+	  logger.debug("found good reic fifo wiring: %s:%s" % (atomname,fifolist))
+
+      is_async_fifo_wire_get = False
+      is_async_fifo_wire_put = False
+      is_async_fifo_wire_gic = False
+      is_async_fifo_wire_pic = False
+      is_async_fifo_wire_qic = False
+      if atomname in wires_async.keys():
+        if fifoname+">" in wires_async[atomname]:
+	  is_async_fifo_wire_get = True
+	if fifoname+"<" in wires_async[atomname]:
+	  is_async_fifo_wire_put = True
+        if fifoname+")" in wires_async[atomname]:
+	  is_async_fifo_wire_gic = True
+	if fifoname+"(" in wires_async[atomname]:
+	  is_async_fifo_wire_pic = True
+	if fifoname+"[" in wires_async[atomname]:
+	  is_async_fifo_wire_qic = True
+
+	if is_async_fifo_wire_get and is_async_fifo_wire_put:
+	  print_line()
+	  logger.error('fifo cannot be both asynchronous get and put type at the same time')
+	  logger.error('atom: %s, fifo: %s' % (atomname, fifoname))
+	  print_line()
+	  sys.exit(1)
+
+	if is_async_fifo_wire_gic and is_async_fifo_wire_pic:
+	  print_line()
+	  logger.error('fifo cannot be both asynchronous gic and pic type at the same time')
+	  logger.error('atom: %s, fifo: %s' % (atomname, fifoname))
+	  print_line()
+	  sys.exit(1)
+
+
+      if (inpouttype == 'CF'): continue
+      fifocoreid = [row['coreid'] for row in db_fifos if row['instancename'] == fifoname][0]
+      fifoweakremote = fifos_whether_multicore[fifoname]
+      fifostrongremote = (atomcoreid != fifocoreid)
+      logger.debug('atomcoreid: %s' % atomcoreid)
+      logger.debug('fifocoreid: %s' % fifocoreid)
+      #fifo_access_signature += mnemonic[inpouttype].upper() if fiforemote else mnemonic[inpouttype]
+      #fifo_access_signature.append(mnemonic[inpouttype].upper() if fiforemote else mnemonic[inpouttype])
+      #fifo_access_signature.append(mnemonic_remote[inpouttype] if fiforemote else mnemonic[inpouttype])
+
+      fifo_access_row = (fifoname, atomname, inpouttype, fifocoreid, atomcoreid)
+      fifo_access_table.append(fifo_access_row)
+      logger.debug(fifo_access_row)
+
+      if (fifostrongremote):
+
+	if (blockname != 'BlockTR' and blockname != 'BlockTD'):
+	  print_line()
+	  logger.error('Atom %s on core %s of block type %s cannot access a strongly-remote FIFO %s on core %s.' % (atomname, atomcoreid, blockname, fifoname, fifocoreid))
+	  print_line()
+	  sys.exit(1)
+
+	mn = mnemonic_strongremote[inpouttype]
+      elif (fifoweakremote):
+	mn = mnemonic_weakremote[inpouttype]
+      else:
+	mn = mnemonic[inpouttype]
+
+      if is_rerw_fifo_wire:
+	mn = mnemonic_to_mnemonic_rerw[mn]
+      if is_reic_fifo_wire:
+	mn = mnemonic_to_mnemonic_reic[mn]
+
+      if is_async_fifo_wire_get:
+        mn = mnemonic_to_mnemonic_async_get[mn]
+      if is_async_fifo_wire_put:
+        mn = mnemonic_to_mnemonic_async_put[mn]
+      if is_async_fifo_wire_gic:
+        mn = mnemonic_to_mnemonic_async_gic[mn]
+      if is_async_fifo_wire_pic:
+        mn = mnemonic_to_mnemonic_async_pic[mn]
+      if is_async_fifo_wire_qic:
+        if inpouttype != 'inp':
+	  print_line()
+	  logger.error('[ operator is allowed only on inp fifos')
+	  print_line()
+	  sys.exit(1)
+        mn = mnemonic_to_mnemonic_async_qic[mn]
+
+      if mn == '':
+	print_line()
+        logger.error('mn found to be null')
+	logger.error('atom: %s, fifo: %s' % (atomname, fifoname))
+	print_line()
+	sys.exit(1)
+
+      fifo_access_signature.append(mn)
+      #row = (fifoname, atomname, blockname, buftype, inpouttype)
+      #dbo.db_insert_fifos_buftypes_many_row(row)
+      #has_rerw = has_rerw or is_rerw_fifo_wire
+    if (int(hasConf)):
+      fifo_access_signature.append('c')
+    fifo_access_signature_string = ','.join(fifo_access_signature)
+    wblockname = blockname + '_j_' + ''.join(fifo_access_signature)
+    wblockrow = (atomname, wblockname, blockname, inptstr, outtstr, conftstr, hasConf, fifo_access_signature_string)
+    logger.debug(wblockrow)
+    logger.debug(fifo_access_signature_string.split(','))
+    dbo.db_insert_atom_wblock_row(wblockrow)
+
+  dbo.db_insert_fifo_access_table(fifo_access_table)
+
+def ensure_fifo_access_is_serialized(dbo):
+  db_fifo_access_table = dbo.db_select_fifo_access_table()
+  fifo_access_table = sorted(sorted(db_fifo_access_table, key=lambda row: row['inpouttype']), key=lambda row: row['fifoname'])
+  t = []
+  warncnt = 0
+  for row in fifo_access_table:
+    #fifoname, atomname, inpouttype, fifocoreid, atomcoreid = tuple(row)
+    fifoname, atomname, inpouttype, fifocoreid, atomcoreid = row
+    if (len(t) == 0):
+      t.append(row)
+      continue
+
+    l_fifoname, l_atomname, l_inpouttype, l_fifocoreid, l_atomcoreid = t[-1]
+    if (l_fifoname == fifoname and l_inpouttype == inpouttype):
+      t.append(row)
+      continue
+
+    #end of one fifo inp/out (reader or writer list)
+    access_cores = [r['atomcoreid'] for r in t]
+    access_cores_unique = list(set(access_cores))
+    if (len(access_cores_unique) > 1):
+      warncnt += 1
+      print_line()
+      logger.warning('fifo %s has readers or writers on different cores' % fifoname)
+      for r in t:
+	fifoname, atomname, inpouttype, fifocoreid, atomcoreid = r
+	logger.warning('fifoname=%s, atomname=%s, inpouttype=%s, fifocoreid=%s, atomcoreid=%s' % (fifoname, atomname, inpouttype, fifocoreid, atomcoreid))
+      print_line()
+
+
+    t = []
+    t.append(row)
+
+
+def buftype_to_bufsize(buftype):
+  bufsize = 'ROUND_UP_N_BYTES_TO_DOUBLE_WORD_MULTIPLE(sizeof(%s))' % buftype
+  return bufsize
+#---------------------
+def gencode_fifos(dbo):
+#---------------------
+  allcode_h = ''
+  allcode_c = ''
+  allcode_c_declaration = ''
+
+  allcode_c_setupPtrs = 'void setupFifoPtrs() {\n'
+  allcode_c_setupLinks = 'void setupFifoLinks() {\n'
+
+  allcode_c_setupStates = ''
+  allcode_c_setupStates += 'void setupFifoStates() {\n'
+  #allcode_c_setup += '  if (DNUM != 0) return;\n'
+
+  deduce_fifo_buftypes_many(dbo)
+  deduce_fifo_buftypes_unique(dbo)
+  deduce_multicore_fifos(dbo)
+
+  db_fifos_whether_multicore = dbo.db_select_fifos_whether_multicore()
+  fifos_whether_multicore = {}
+  for row in db_fifos_whether_multicore:
+    fifoname = row['fifoname']
+    is_multicore = row['is_multicore']
+    fifos_whether_multicore[fifoname] = is_multicore
+
+  #if fifo_cmd == 'fifo':
+  #db_fifos = dbo.db_select_fifos()
+  db_fifos = dbo.db_select_fifos_typed_unfilled()
+  for row in db_fifos:
+    fifo_name = row["instancename"];
+    fifo_optimized = row["fifo_optimized"]
+
+    logger.debug('code_h_fifo_declaration:')
+    #code = code_h_fifo_declaration(fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_core_id)
+    #db.execute('Create table fifos (instancename PRIMARY KEY, numbufs INTEGER, bufsize INTEGER, coreid INTEGER)')
+    numbufs = row["numbufs"]
+    #bufsize = row["bufsize"]
+    buftype = row["buftype"]
+    bufsize = buftype_to_bufsize(buftype)
+    coreid  = row["coreid"]
+    code = code_h_fifo_declaration(fifo_name, numbufs, bufsize, coreid)
+    logger.debug(code)
+    allcode_h += code
+
+    logger.debug('code_c_fifo_declaration:')
+    #code = code_c_fifo_declaration(fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_core_id)
+    code = code_c_fifo_declaration(fifo_name, numbufs, bufsize, coreid, fifos_whether_multicore[fifo_name], fifo_optimized)
+    logger.debug(code)
+    allcode_c_declaration += code
+
+    logger.debug('code_c_fifo_setup:')
+    #code = code_c_fifo_setup(fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_core_id)
+    srcdsttype = row["srcdsttype"]
+    code = code_c_fifo_setup(fifo_name, numbufs, bufsize, srcdsttype, coreid)
+    logger.debug(code)
+    allcode_c_setupStates += code
+
+    logger.debug('code_c_fifo_setupPtrs:')
+    code = code_c_fifo_setupPtrs(fifo_name)
+    logger.debug(code)
+    allcode_c_setupPtrs += code
+
+  #allcode_c_setupStates += '\n'
+
+
+  db_fifos = dbo.db_select_fifos_typed_filled()
+  for row in db_fifos:
+    fifo_name = row["instancename"]
+    fifo_data = row["data"]
+    numbufs = row["numbufs"]
+    #bufsize = row["bufsize"]
+    buftype = row["buftype"]
+    bufsize = buftype_to_bufsize(buftype)
+    coreid  = row["coreid"]
+
+    logger.debug('code_h_fifo_declaration:')
+    #code = code_h_fifo_declaration(fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_core_id)
+    #db.execute('Create table fifos (instancename PRIMARY KEY, numbufs INTEGER, bufsize INTEGER, coreid INTEGER)')
+    code = code_h_fifo_declaration(fifo_name, numbufs, bufsize, coreid)
+    logger.debug(code)
+    allcode_h += code
+
+    logger.debug('code_c_fifo_declarationFilled:')
+    #code = code_c_fifo_declaration(fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_core_id)
+    code = code_c_fifo_declarationFilled(fifo_name, numbufs, bufsize, coreid, fifo_data, fifos_whether_multicore[fifo_name])
+    logger.debug(code)
+    allcode_c_declaration += code
+
+    logger.debug('code_c_fifo_setupFilled:')
+    #code = code_c_fifo_setup(fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_core_id)
+    code = code_c_fifo_setupFilled(fifo_name, numbufs, bufsize, srcdsttype, coreid)
+    logger.debug(code)
+    allcode_c_setupStates += code
+
+    logger.debug('code_c_fifo_setupPtrs:')
+    code = code_c_fifo_setupPtrs(fifo_name)
+    logger.debug(code)
+    allcode_c_setupPtrs += code
+
+  #elif fifo_cmd == 'link':
+  #allcode_c_setup += '  if (DNUM == 0) {\n'
+  db_links = dbo.db_select_links()
+  for row in db_links:
+    logger.debug('code_c_link_declaration:')
+    numbufs_src = int(row["numbufs_src"])
+    numbufs_dst = int(row["numbufs_dst"])
+    fifo_src = row["fifo_src"]
+    fifo_dst = row["fifo_dst"]
+    link_src_coreid = row["coreid_src"]
+    if (numbufs_src != numbufs_dst):
+      print_line()
+      logger.error("numbufs_src: %d in %s is not equal to numbufs_dst: %d in %s\n" % (numbufs_src, fifo_src, numbufs_dst, fifo_dst))
+      print_line()
+      exit(6)
+    n_links = numbufs_src
+    code = code_c_link_declaration(fifo_src, fifo_dst, row["link_owner"], n_links, link_src_coreid)
+    logger.debug(code)
+    allcode_c_declaration += code
+
+    logger.debug('code_c_link_setup:')
+    code = code_c_link_setup(row["fifo_src"], row["fifo_dst"], row["link_owner"])
+    logger.debug(code)
+    allcode_c_setupLinks += code
+  #allcode_c_setupStates += '  }\n'
+      
+  allcode_c_setupPtrs += '}\n'
+  allcode_c_setupStates += '}\n'
+  allcode_c_setupLinks += '}\n'
+  #ifile.close()
+
+  allcode_h += '\n'
+  allcode_h += 'void setupFifos();\n'
+  logger.debug('allcode_h:')
+  logger.debug('----------')
+  logger.debug(allcode_h)
+  #f1.write(allcode_h)
+
+  allcode_c += allcode_c_declaration
+  allcode_c += '\n'
+  allcode_c += allcode_c_setupPtrs
+  allcode_c += '\n'
+  allcode_c += allcode_c_setupStates
+  allcode_c += '\n'
+  allcode_c += allcode_c_setupLinks
+  logger.debug('allcode_c:')
+  logger.debug('----------')
+  logger.debug(allcode_c)
+  #f2.write(allcode_c)
+
+  return (allcode_h, allcode_c)
+
+#---------------------
+def deduce_axnids(dbo):
+#---------------------
+  logger.info('deduce_axnids')
+  axnid_table = {}
+  db_stateps = dbo.db_select_stateps()
+  for row in db_stateps:
+    logger.debug(row)
+    statename = row["statename"]
+    statenum  = row["statenum"]
+    corenum   = row["corenum"]
+    axnname   = row["axnname"]
+    atomseqid = row["atomseqid"]
+
+    code  = '//statenum=%d, corenum=%d\n' % (statenum, corenum)
+    axnid = statenum * 1000 + corenum * 100;
+    if axnname != 'noaxn':
+      if axnname in axnid_table:
+	if not axnid_table[axnname] == axnid:
+	  print_line()
+	  logger.error("axnid conflict")
+	  print_line()
+	  sys.exit(1)
+      else:
+	axnid_table[axnname] = axnid
+
+  return axnid_table
+
+
+#---------------------
+def gencode_actions(dto, wcg, dbo, GEN_BLOCK_DEBUG, axnid_table = {}):
+#---------------------
+  logger.info('gencode_actions')
+
+  atom_code_table = {}
+
+  atomnameidx = 0
+  atomnamemap = {}
+
+  axn_profiling_table = []
+  atom_profiling_table = []
+
+  dummy_atomid = 0
+  atomnamemap['dummy'] = atomnameidx 
+  atomnameidx += 1
+  atom_profiling_row = []
+  atom_profiling_row.append(str(dummy_atomid))
+  atom_profiling_row.append('dummy,dummy')
+  atom_profiling_table.append(atom_profiling_row)
+
+  allcode_h = ''
+  allcode_c = ''
+
+  allcode_h += 'static inline void noaxn(Uint32 n) {}\n'
+
+  db_actions = dbo.db_select_actions()
+  for row in db_actions:
+	logger.debug(row)
+	axnname = row["axnname"]
+	atomseqid = row["atomseqid"]
+
+
+	if axnname == 'noaxn':
+	  continue
+
+	axn_profiling_row = []
+	if not axnid_table:
+	  axnid = atomseqid + 1000				
+	  #serves as an action ID too, 1000 offset is to create a distinct
+	  #numbering space than that used for states
+	else:
+	  if not axnname in axnid_table:
+	    axnid = 0
+	  else:
+	    axnid = axnid_table[axnname]
+
+	axn_profiling_row.append(str(axnid))	
+	axn_profiling_row.append(axnname)
+
+	axn_profiling_table.append(axn_profiling_row)
+
+	logger.debug('code_h_axn:')
+	#code = code_h_axn(axnname)
+	code = 'void %s(Uint32 n);\n' % axnname
+	logger.debug(code)
+	allcode_h += code
+
+	logger.debug('code_c_axn:')
+	code = '//axnid: %d\n' % axnid
+	code += 'void %s(Uint32 n) {\n' % axnname
+	code += '  int i;\n'
+	code += '  for (i = 0; i < n; i++) {\n'
+	logger.debug(code)
+	allcode_c += code
+
+	if dto.whether_timestamp('ax'):
+	  code = '    SYS_TimeStamp_aliased(%dULL);\n' % (axnid)
+	  allcode_c += code
+
+	db_atomseq = dbo.db_select_action_atomseq(atomseqid)
+	i = 0
+	atomname = ""
+	for row in db_atomseq:
+	      atom_profiling_row = []
+
+	      logger.debug(row)
+	      atomname = row["instancename"]
+	      blockname = row["blockname"]
+	      wblockname = row["wblockname"]
+
+	      i += 1
+	      if dto.whether_timestamp('at') and \
+	      	TIMESTAMP_CONFIG['TIMESTAMP_IDENTIFY_ATOMS_PER_AXN'] :
+		    if (i > 99):
+		      print_line()
+		      printf("ERROR: Cannot assign ID to atom")
+		      print_line()
+		      sys.exit(1)
+
+		    atomid = axnid * 100 + i 		
+		    #first four decimal digits (most-significant) correspond to
+		    #the axnid (1000-series), the remaining three
+		    #(least-significant) correspond to atom id within axn (0-99)
+
+		    atom_profiling_row.append(str(atomid))	
+		    atom_profiling_row.append('%s,%s' % (wblockname,atomname))
+		    atom_profiling_table.append(atom_profiling_row)
+
+		    if not dto.whether_timestamp('atii'):
+		      if not atomname in atom_code_table:
+			atom_code_table[atomname] = [blockname, wblockname, wblockname + '_i']
+		      else:
+			atom_code_table[atomname].append(wblockname)
+			atom_code_table[atomname].append(wblockname + '_i')
+	      else:
+		    if not atomname in atomnamemap:
+		      atomnameidx += 1
+		      atomnamemap[atomname] = atomnameidx 
+
+		      atomid = atomnamemap[atomname]
+
+		      atom_profiling_row.append(str(atomid))	
+		      atom_profiling_row.append('%s,%s' % (wblockname,atomname))
+		      atom_profiling_table.append(atom_profiling_row)
+
+		    if not dto.whether_timestamp('atii'):
+		      if not atomname in atom_code_table:
+			atom_code_table[atomname] = [blockname, wblockname, wblockname + '_i']
+		      else:
+			atom_code_table[atomname].append(wblockname)
+			atom_code_table[atomname].append(wblockname + '_i')
+
+		    atomid = atomnamemap[atomname]
+
+
+
+	      fully_qualified_atomname = '%s.%s' % (axnname, atomname)
+	      if dto.whether_timestamp('at',fully_qualified_atomname):
+		    code = '      SYS_TimeStamp_aliased(%dULL);\n' % (atomid)
+		    allcode_c += code
+
+
+	      logger.debug('code_c_axn:')
+	      code =  '    //atomid: %s\n' % atomid
+	      generated_wblockname = ""
+
+	      if dto.whether_timestamp('atii',atomname):
+		if dto.whether_timestamp('ati'):
+		  generated_wblockname = wcg.gencode_wblockTS(dbo, APPDIRNAME, \
+		  	wblockname, GEN_BLOCK_DEBUG, atomid, False)
+		else:
+		  generated_wblockname = wcg.gencode_wblockTS(dbo, APPDIRNAME, \
+		  	wblockname, GEN_BLOCK_DEBUG, atomid, True)
+
+		##code += '    %s_TS%d_do(%s);\n' % (wblockname, atomid, atomname)
+		code += '    %s_TS_do(%s);\n' % (wblockname, atomname)
+	      else:
+	        #print "%s, %s determined not fit for timestamping" % wblockname, atomname
+		#raw_input()
+		code += '    %s_do(%s);\n' % (wblockname, atomname)
+
+	      if dto.whether_timestamp('atii'):
+		if not atomname in atom_code_table:
+		  atom_code_table[atomname] = [generated_wblockname + '_do', \
+		    blockname + '_i']
+		else:
+		  atom_code_table[atomname].append(generated_wblockname + '_do')
+		  atom_code_table[atomname].append(blockname + '_i')
+
+	      logger.debug(code)
+	      allcode_c += code
+
+	#print axnname, atomname
+	#import pdb; pdb.set_trace()
+
+	fully_qualified_atomname = '%s.%s' % (axnname, atomname)
+	if atomname != "" and dto.whether_timestamp('at',fully_qualified_atomname):
+	  i += 1
+	  if TIMESTAMP_CONFIG['TIMESTAMP_IDENTIFY_ATOMS_PER_AXN'] :
+	    atomid = axnid * 100 + i 
+
+	  #atom_profiling_row = []
+	  #atom_profiling_row.append(str(atomid))	
+	  #atom_profiling_row.append('dummy,dummy')
+	  #atom_profiling_table.append(atom_profiling_row)
+
+	  code =  '    //(dummy marker) atomid: %s\n' % dummy_atomid
+	  code += '    SYS_TimeStamp_aliased(%dULL);\n' % (dummy_atomid)
+	  allcode_c += code
+
+	if dto.whether_timestamp('ax'):
+	  code = '    SYS_TimeStamp_aliased(%dULL);\n' % (axnid)
+	  allcode_c += code
+
+	allcode_c += '  }\n'
+	allcode_c += '}\n'
+	allcode_c += '\n'
+
+  logger.debug('allcode_h:')
+  logger.debug(allcode_h)
+
+  logger.debug('allcode_c:')
+  logger.debug(allcode_c)
+
+
+  return ((allcode_h, allcode_c), axn_profiling_table, atom_profiling_table, atomnamemap, atom_code_table)
+
+
+
+def parse_fifos_inp_file(dbo, FIFO_DB, fifos_inp_file):
+  try:
+     with open(fifos_inp_file, "r") as ifile: pass
+     ifile.close()
+  except IOError as e:
+     logger.error('%s not found in %s' % (fifos_inp_file, os.getcwd()))
+     exit(11)
+  
+  ifile  = open(fifos_inp_file, "r")
+  reader = csv.reader(ifile, delimiter=":")
+
+  cmd_idx 	= 0
+  name_idx 	= 1
+  nbuf_idx 	= 2
+  #size_idx 	= 3
+  #type_idx	= 4
+  #core_idx 	= 5
+  type_idx	= 3
+  core_idx 	= 4
+  
+  data_idx	= 2
+
+  src_idx	= 1
+  dst_idx	= 2
+  ltype_idx	= 3
+
+  type_idx	= 2
+
+  commentstring = "#"
+  for row in reader:
+      if len(row) == 0:
+        continue
+      if row[0].startswith(commentstring):
+        continue
+      logger.debug('row:')
+      logger.debug(row)
+
+      row = [x.strip() for x in row]
+      fifo_cmd = row[cmd_idx]
+      if fifo_cmd == 'fifo':
+	fifo_name = row[name_idx].strip()
+	fifo_nbuf = row[nbuf_idx].strip()
+	#fifo_size = row[size_idx].strip()
+	fifo_type = row[type_idx].strip()
+	fifo_core = row[core_idx].strip()
+	#dbo.db_insert_fifo_row(fifo_name, fifo_nbuf, fifo_size, fifo_core)
+	fifo_row = row[1:]
+	fifo_row = [x.strip() for x in fifo_row]
+	dbo.db_insert_fifo_row(fifo_row)
+
+	fifo_log_row = row[1:]
+	FIFO_DB.append(fifo_log_row)	#for logging
+
+      elif fifo_cmd == 'fill':
+	fifo_name = row[name_idx].strip()
+	fifo_data = row[data_idx].strip()
+	#dbo.db_insert_fill_row(fifo_name, fifo_nbuf, fifo_size, fifo_core)
+	fill_row = row[1:]
+	fill_row = [x.strip() for x in fill_row]
+	dbo.db_insert_fill_row(fill_row)
+
+      elif fifo_cmd == 'link':
+        link_src = row[src_idx].strip()
+	link_dst = row[dst_idx].strip()
+	link_owner = row[ltype_idx].strip()
+	#dbo.db_insert_link_row(link_src, link_dst, link_type)
+	link_row = row[1:]
+	link_row = [x.strip() for x in link_row]
+	dbo.db_insert_link_row(link_row)
+
+      elif fifo_cmd == 'typehint':
+        fifoname = row[name_idx]
+	typename = row[type_idx]
+	#db.execute('Create table fifos_buftypes_many (instancename, atomname, buftype, inpouttype)')
+	optimized_atom = 0
+	row = (fifoname, 'typehint', typename, 'typehint', optimized_atom)
+	dbo.db_insert_fifos_buftypes_many_row(row)
+      
+  ifile.close()
+
+def parse_atoms_inp_file(bs, dbo, ATOM_DB, WIRE_DB, CONF_DB, atoms_inp_file, atoms_to_optimize = []):
+  try:
+     with open(atoms_inp_file, "r") as ifile: pass
+     ifile.close()
+  except IOError as e:
+     logger.error('_create_atoms: %s not found in %s' % (atoms_inp_file, os.getcwd()))
+     exit(12)
+  
+  ifile  = open(atoms_inp_file, "r")
+  reader = csv.reader(ifile, delimiter=":")
+
+  commentstring = "#"
+
+  #<command==atom>, <typename>, <instancename>, <core id>
+  #<command==wire>, <instancename>, <fifo1>, [fifo2], ...
+
+
+  cmd_idx 	= 0
+  name_idx      = 1
+  ERRORS = []
+  for row in reader:
+      if len(row) == 0:
+        continue
+      if row[0].startswith(commentstring):
+        continue
+      logger.debug('row:')
+      logger.debug(row)
+
+      row = [x.strip() for x in row]
+
+      cmd = row[cmd_idx]
+      if cmd == 'atom':
+	atom_row = row[1:]
+	atomname = row[1]
+	blockname = row[2]
+	#TODO
+	#----------------
+	# Block scraping
+	#----------------
+	#blockname = row["typename"]
+	#atomname = row["instancename"]
+	#blockname='BlockX'
+	block_inp_file = bs.which(blockname, ilib_include_path)
+	ios_list = bs.parse_block_i_h_file(blockname, block_inp_file)
+	logger.debug('atomname=%s, blockname=%s, ios_list:' % (atomname, blockname))
+	logger.debug(ios_list)
+	#inp_type_list = ios_list[0]
+	#out_type_list = ios_list[1]
+	#conf_type_list = ios_list[2]
+        (inp_type_list, out_type_list, conf_type_list, 
+		inp_list2, out_list2, cf_par_list, cf_par_dict) = ios_list
+	inptstr = ','.join(inp_type_list)
+	outtstr = ','.join(out_type_list)
+	conftstr = ','.join(conf_type_list)
+	if len(conf_type_list) == 0:
+	  hasConf = 0
+	elif len(conf_type_list) == 1:
+	  hasConf = 1
+	else:
+	  print_line()
+	  logger.error("Block %s has more than one conf types" % blockname)
+	  print_line()
+	  exit(13)
+	#TODO
+	atom_row.append(inptstr)
+	atom_row.append(outtstr)
+	atom_row.append(conftstr)
+	atom_row.append(hasConf)
+
+	optimized_atom = 0
+	if atomname in atoms_to_optimize:
+	  optimized_atom = 1
+	atom_row.append(optimized_atom)
+
+	dbo.db_insert_atom_row(atom_row)
+
+	atom_log_row = row[1:]
+	inpstr = ','.join(["%s:%s" % tup for tup in inp_list2])
+	outstr = ','.join(["%s:%s" % tup for tup in out_list2])
+	atom_log_row.append(inpstr)
+	atom_log_row.append(outstr)
+	ATOM_DB.append(atom_log_row)	#for logging
+
+      elif cmd == 'wire':
+        wire_row = row
+
+	atomname = wire_row[1]
+	fifolist = wire_row[2:]
+
+	rerw_fifos = [e for e in fifolist if e.endswith("+")]
+	reic_fifos = [e for e in fifolist if e.endswith("*")]
+	async_fifos = [e for e in fifolist if e.endswith(">") \
+					or e.endswith("<") \
+					or e.endswith("(") \
+					or e.endswith(")") \
+					or e.endswith("[")]
+
+	if rerw_fifos:
+	  wires_rerw[atomname] = rerw_fifos
+	  logger.debug("atom: %s, wires_rerw: %s" % (atomname, rerw_fifos))
+
+	if reic_fifos:
+	  wires_reic[atomname] = reic_fifos
+	  logger.debug("atom: %s, wires_reic: %s" % (atomname, reic_fifos))
+
+	if async_fifos:
+	  wires_async[atomname] = async_fifos
+	  logger.debug("atom: %s, wires_async: %s" % (atomname, async_fifos))
+
+	orig_fifolist = fifolist 
+
+	fifolist = [e.rstrip("+") for e in fifolist]
+	fifolist = [e.rstrip("*") for e in fifolist]
+	fifolist = [e.rstrip(">").rstrip("<").rstrip(")").rstrip("(").rstrip("[") for e in fifolist]
+
+
+	wire_row = (atomname, ",".join(fifolist))
+	try:
+	  dbo.db_insert_wire_row(wire_row)
+	except:
+	  ERRORS.append('Either atom %s or a fifo in %s is not defined' % (atomname, fifolist))
+	
+	orig_wire_row = (atomname, ",".join(orig_fifolist))
+	wire_log_row = (wire_row,orig_wire_row)
+	WIRE_DB.append(wire_log_row)	#for logging
+
+
+#      elif cmd == 'pars':
+#        pars_row = row
+#	pars_row = (pars_row[1].strip(), ", ".join(pars_row[2:]))
+#	dbo.db_insert_pars_row(pars_row)
+
+      elif cmd == 'conf':
+        atom_name = row[name_idx]
+	conf_row  = row[name_idx:]
+	logger.debug("conf_row = ")
+	logger.debug(conf_row )
+	try:
+	  dbo.db_insert_conf_row(conf_row)
+	except sqlite3.IntegrityError as e:
+	  ERRORS.append('atom %s not found when inserting conf row %s ' % (atom_name, conf_row))
+
+	CONF_DB.append(conf_row)	#for logging
+
+      else:
+	print_line()
+        logger.error("Unrecognized command")
+	print_line()
+	exit(14)
+
+  ifile.close()
+
+  if wires_rerw:
+    logger.debug("wires_rerw: %s" % wires_rerw)
+
+  if wires_reic:
+    logger.debug("wires_reic: %s" % wires_reic)
+
+  if wires_async:
+    logger.debug("wires_async: %s" % wires_async)
+
+
+  if ERRORS:
+    print_line()
+    for e in ERRORS:
+      logger.error(e)
+    print_line()
+    sys.exit(1)
+
+
+
+###########################
+
+def parse_states_inp_file(dbo, AXN_DB, STATE_DB, STATEP_DB, states_inp_file, scg):
+  try:
+     with open(states_inp_file, "r") as ifile: pass
+     ifile.close()
+  except IOError as e:
+     logger.error('%s not found in %s' % (states_inp_file, os.getcwd()))
+     exit(15)
+  
+  commentstring = "#"
+
+  ifile  = open(states_inp_file, "r")
+
+  fc = ifile.readlines()
+  nfc = []
+  for row in fc:
+    row = row.strip()
+    if row.startswith(commentstring):
+      continue
+    if row.strip() == '':		#blank line that is not a comment
+      continue
+    nfc.append(row)
+  fc = '\n'.join(nfc)
+
+  fts = fc.split('{')
+  nfts = [fts[0]]
+  for t in fts[1:]:
+    tl,tr = t.split('}')
+    tl = ' '.join([v.strip() for v in tl.split('\n')])
+    nfts.append(tl)
+    nfts.append(tr)
+  fc = ' '.join(nfts)
+  rows = fc.split('\n')
+
+  #reader = csv.reader(ifile, delimiter=":")
+  ##reader = csv.reader(fc, delimiter=":")
+
+  cmd_idx 	= 0
+  name_idx 	= 1
+
+  aseq_idx1	= 2
+
+  #snum_idx	= 2
+  #cnum_idx	= 3
+  #axnn_idx	= 4
+  #aseq_idx2	= 5
+  cnum_idx	= 2
+  axnn_idx	= 3
+  aseq_idx2	= 4
+
+  wnum_idx	= 2
+  stnm_idx	= 3
+
+  iter_idx	= 2
+
+  #for row in reader:
+  for row in rows:
+      if row == '':
+        continue
+      row = row.split(':')
+      if row[0].startswith(commentstring):
+        continue
+      if len(row) == 1 and row[0].strip() == '':		#blank line that is not a comment
+        continue
+
+      row = [x.strip() for x in row]
+      logger.debug('row:')
+      logger.debug(row)
+      #raw_input()
+
+      cmd = row[cmd_idx]
+      if cmd == 'action':
+	action_name = row[name_idx]
+	atomseq     = row[aseq_idx1]
+	logger.debug("row = %s" % row)
+	action_row = row[name_idx:(name_idx+1)]
+	#atom_seq = row[aseq_idx1:(aseq_idx1+1)]
+	logger.debug("action_row = ")
+	logger.debug(action_row)
+	try:
+	  atomseqid = dbo.db_insert_action_row(action_row)
+	except sqlite3.IntegrityError as e:
+	  print_line()
+	  logger.error('something is wrong in the definition of this action:\n%s' % action_row)
+	  print_line()
+	  raise e
+	  sys.exit(1)
+
+	dbo.db_insert_actionatomseq_row(atomseqid, atomseq)
+	atomseq_cleanedup = [atom.strip() for atom in atomseq.split(';')]
+	AXN_DB.append((action_name, atomseq_cleanedup[:-1]))
+
+      elif cmd == 'state':
+        state_name = row[name_idx]
+	state_row  = row[name_idx:]
+	logger.debug("state_row = ")
+	logger.debug(state_row)
+	stateid = dbo.db_insert_state_row(state_row)
+	STATE_DB.append(state_row)
+
+      elif cmd == 'statep':
+	state_name = row[name_idx]
+	#state_num  = row[snum_idx]
+	core_num   = row[cnum_idx]
+	axn_name   = row[axnn_idx]
+	atomseq    = row[aseq_idx2]
+	statep_row  = row[name_idx:aseq_idx2]
+	logger.debug("statep_row = ")
+	logger.debug(statep_row)
+	try:
+	  atomseqid = dbo.db_insert_statep_row(statep_row)
+	except sqlite3.IntegrityError as e:
+	  print_line()
+	  logger.error('at least one identifier is undefined in this statep:\n%s' % statep_row)
+	  print_line()
+	  raise e
+	  sys.exit(1)
+
+	STATEP_DB.append((statep_row, atomseq))
+
+	try:
+	  dbo.db_insert_stateatomseq_row(atomseqid, atomseq)
+	except sqlite3.IntegrityError as e:
+	  print_line()
+	  logger.error('one or more atoms not found when inserting statep atom sequence %s ' % atomseq)
+	  print_line()
+	  raise e
+	  sys.exit(1)
+
+      elif cmd == 'statei':
+        state_name = row[name_idx]
+	iter_count = row[iter_idx]
+	#global initStateName
+	#global initIterCount
+	initStateName = state_name
+	initIterCount = iter_count
+	scg.set_init_state(initStateName, initIterCount)
+
+#      elif cmd == 'decway':
+#        atom_name = row[name_idx]
+#	way_num   = row[wnum_idx]
+#	statename = row[stnm_idx]
+#	decway_row = row[name_idx:]
+#	dbo.db_insert_decway_row(decway_row)
+
+
+      else:
+	print_line()
+        logger.error("Unrecognized command")
+	print_line()
+	exit(16)
+
+  ifile.close()
+  return initStateName
+
+
+
+def ensure_atoms_states_cores_match(dbo):
+  db1 = dbo.db_select_axn_atoms_core_integrity_query()
+  mismatches1 = [row for row in db1 if row['corenum'] != row['coreid']]
+  if (len(mismatches1)):
+    print_line()
+
+    for row in mismatches1:
+      atomname = row['instancename']
+      atomcoreid = row['coreid']
+      statename = row['statename']
+      statepcoreid = row['corenum']
+      axnname = row['axnname']
+      logger.error('Core ID mismatch: Atom %s on core %s called in state %s on core %s using action %s.' % (atomname, atomcoreid, statename, statepcoreid, axnname))
+    print_line()
+
+  db2 = dbo.db_select_statep_atoms_core_integrity_query()
+  mismatches2 = [row for row in db2 if row['corenum'] != row['coreid']]
+  if (len(mismatches2)):
+    print_line()
+    for row in mismatches2:
+      atomname = row['instancename']
+      atomcoreid = row['coreid']
+      statename = row['statename']
+      statepcoreid = row['corenum']
+      logger.error('Core ID mismatch: Atom %s on core %s called in state %s on core %s.' % (atomname, atomcoreid, statename, statepcoreid))
+    print_line()
+
+  if (len(mismatches1) or len(mismatches2)):
+    sys.exit(1)
+
+
+def join_statedb_statepdb(STATE_DB, STATEP_DB):
+  sdb = {}
+  for state in STATE_DB:
+    sdb[state[0]] = {}
+  for statep in STATEP_DB:
+    print statep
+    row, atomseq = statep
+    atomseq = [a.strip() for a in atomseq.split(';')]
+    atomseq = atomseq[:-1]
+    (state, core, axn) = tuple(row)
+    sdb[state][core] = (axn, atomseq)
+
+  return sdb
+
+def main():
+  global TIMESTAMP_CONFIG
+
+  atoms_to_optimize_file = sys.argv[12]
+  debug_conf_file = sys.argv[13]
+  memorymap_input = sys.argv[14]
+  memorymap_output = sys.argv[15]
+  
+  global ilib_include_path
+
+  dbo = DB(logger)
+  dto = DebugTsOpt(logger, IS_INTERACTIVE)
+  bs = BlockScraper(logger)
+  wcg = WblockCodeGenerator(logger)
+  scg = StatesCodeGenerator(logger)
+  acg = AtomsCodeGenerator(logger)
+  mg = MemorymapGenerator(logger)
+
+  print_line()
+  CFLAGS = sys.argv[16:]
+  logger.info('CFLAGS=%s' % (CFLAGS))
+  print_line()
+
+  #parser = OptionParser()
+  #parser = MyOptionParser()
+  parser = PassThroughOptionParser()
+  parser.add_option("-I", "--include", dest="ilib_include_path",
+		    help="include path", metavar="ILIB_INCLUDE_PATH",action='append')
+  parser.add_option("-D", "--define", dest="defined_symbols",
+		    help="defined symbols", metavar="DEFINED_SYMBOLS",action='append')
+  parser.add_option("-T", "--tsconf", dest="timestamp_conf",
+		    help="timestamp configuration", metavar="TIMESTAMP_CONF",action='store')
+
+  (options, args) = parser.parse_args(CFLAGS)
+  ilib_include_path = options.ilib_include_path
+  print_line()
+  logger.info(ilib_include_path)
+  print_line()
+
+  #CFLAGS = os.environ['CFLAGS']
+  #(options, args) = parser.parse_args(CFLAGS)
+  defined_symbols = options.defined_symbols
+  print_line()
+  logger.info('%s' % defined_symbols)
+  print_line()
+
+  timestamp_conf = options.timestamp_conf
+  print_line()
+  logger.info("timestamp configuration:  %s" % timestamp_conf )
+  print_line()
+
+
+  #set up more compile behavior based on defined symbols
+  #HAVE_L1PSRAM, HAVE_L1DSRAM, GEN_BLOCK_DEBUG = makefile_hashdef_logic(defined_symbols)
+  HAVE_L1PSRAM, HAVE_L1DSRAM, _ = makefile_hashdef_logic(defined_symbols)
+
+  atoms_to_debug, atoms_to_identify, TIMESTAMP_CONFIG, GEN_BLOCK_DEBUG = dto.get_debug_conf(\
+  	debug_conf_file, \
+	timestamp_conf)
+  logger.info('TIMESTAMP_CONFIG: %s' % TIMESTAMP_CONFIG)
+  confirm(IS_INTERACTIVE)
+  
+
+  #fifos_inp_file = "fifos.txt"
+  #atoms_inp_file = "atoms.txt"
+  fifos_inp_file = sys.argv[1]
+  atoms_inp_file = sys.argv[2]
+  states_inp_file = sys.argv[3]
+
+  #fifos_h_file = "__fifos__.h"
+  #fifos_c_file = "__fifos__.c"
+  #atoms_h_file = "__atoms__.h"
+  #atoms_c_file = "__atoms__.c"
+  fifos_h_file = sys.argv[4]
+  fifos_c_file = sys.argv[5]
+  atoms_h_file = sys.argv[6]
+  atoms_c_file = sys.argv[7]
+  actions_h_file = sys.argv[8]
+  actions_c_file = sys.argv[9]
+  states_h_file = sys.argv[10]
+  states_c_file = sys.argv[11]
+
+  atoms_h_BaseName = atoms_h_file.split("/")[-1]
+  appdirname = '/'.join(atoms_h_file.split("/")[:-1])
+
+  state_profiling_table_file = appdirname + '/state_profiling_table.txt' 
+  axn_profiling_table_file = appdirname + '/action_profiling_table.txt'
+  atom_profiling_table_file = appdirname + '/atom_profiling_table.txt'
+  global APPDIRNAME
+  APPDIRNAME = appdirname
+
+  ##TRACEDIR_WINSTYLE = os.system('_cygpath -w %s' % APPDIRNAME)
+  #proc = subprocess.Popen(["_cygpath -w %s" % APPDIRNAME], stdout=subprocess.PIPE, shell=True)
+  #(out, err) = proc.communicate()
+  #TRACEDIR_WINSTYLE = out
+
+
+
+  atoms_to_optimize_for_code, atoms_to_optimize_for_data = \
+  	dto.get_atoms_to_optimize(atoms_to_optimize_file, HAVE_L1PSRAM, HAVE_L1DSRAM)
+
+  FIFO_DB = []
+  parse_fifos_inp_file(dbo, FIFO_DB, fifos_inp_file)
+
+  ATOM_DB = []
+  WIRE_DB = []
+  CONF_DB = []
+  parse_atoms_inp_file(bs, dbo, ATOM_DB, WIRE_DB, CONF_DB, atoms_inp_file, atoms_to_optimize_for_data)
+
+
+  f = open('atom_db.txt', 'w')
+  for row in ATOM_DB:
+    f.write(' '.join(row) + '\n')
+  f.close()
+  logger.info('atom_db.txt written')
+  
+
+  #insert noaxn in actions table so that foreign key constraints are met
+  #for state programs using "noaxn" action
+  action_row = ['noaxn']
+  atomseqid = dbo.db_insert_action_row(action_row)
+
+  AXN_DB = []
+  STATE_DB = []
+  STATEP_DB = []
+  initStateName = parse_states_inp_file(dbo, AXN_DB, STATE_DB, STATEP_DB, states_inp_file, scg)
+
+  ###########################
+  ensure_atoms_states_cores_match(dbo)
+  ###########################
+
+  #---------------------------------------------------------------------------------
+  code = \
+  	gencode_fifos(dbo)
+  #---------------------------------------------------------------------------------
+
+  ###########################
+  deduce_wblocks(dbo)
+  ###########################
+
+  ###########################
+  #GEN_DO_FUNC = not TIMESTAMP_CONFIG['TIMESTAMP_ATOMIMPLS']
+  #wcg.gencode_wblocks(dbo, GEN_DO_FUNC)		#if atoms are timestamped internally, _do isn't generated here.
+  ###########################
+
+
+
+
+  ###########################
+  ensure_fifo_access_is_serialized(dbo)
+  ###########################
+
+  fifos_allcode_h = code[0]
+  fifos_allcode_c = code[1]
+  logger.debug('code_fifos_h_file:\n-----------------\n%s\n' % fifos_allcode_h)
+  logger.debug('code_fifos_c_file:\n-----------------\n%s\n' % fifos_allcode_c)
+
+  #---------------------------------------------------------------------------------
+  code = \
+  	acg.gencode_atoms(dbo)
+  #---------------------------------------------------------------------------------
+
+  atoms_allcode_h = code[0]
+  atoms_allcode_c = code[1]
+  logger.debug('code_atoms_h_file:\n-----------------\n%s\n' % atoms_allcode_h)
+  logger.debug('code_atoms_c_file:\n-----------------\n%s\n' % atoms_allcode_c)
+
+  
+  axnid_table = deduce_axnids(dbo)
+
+  #---------------------------------------------------------------------------------
+  code, axn_profiling_table_raw, atom_profiling_table_raw, atomnamemap, atom_code_table \
+  	= gencode_actions(dto, wcg, dbo, GEN_BLOCK_DEBUG, axnid_table)
+  #---------------------------------------------------------------------------------
+  
+  axn_profiling_table_out = ''
+  for row in axn_profiling_table_raw:
+    axn_profiling_table_out += ','.join(row) + '\n'
+  axn_profiling_table = axn_profiling_table_out
+
+
+  actions_allcode_h = code[0]
+  actions_allcode_c = code[1]
+  logger.debug('code_actions_h_file:\n-----------------\n%s\n' % actions_allcode_h)
+  logger.debug('code_actions_c_file:\n-----------------\n%s\n' % actions_allcode_c)
+
+  ###########################
+  #GEN_DO_FUNC = not TIMESTAMP_CONFIG['TIMESTAMP_ATOMIMPLS']
+  #atoms_already_generated = atom_code_table.keys()
+  #wcg.gencode_wblocks(dbo, GEN_DO_FUNC, atoms_already_generated)		
+  #if atoms are timestamped internally, _do isn't generated here.
+  #---------------------------------------------------------------------------------
+  wcg.gencode_wblocks(dbo, APPDIRNAME, GEN_BLOCK_DEBUG)
+  #---------------------------------------------------------------------------------
+  ###########################
+ 
+
+  ###########################
+  sym_list_L1P = []
+  sym_list_L1P = create_atom_sym_list(atom_code_table, atoms_to_optimize_for_code)
+  mg.create_memorymap_output(sym_list_L1P, memorymap_input, memorymap_output, HAVE_L1PSRAM)
+  ###########################
+
+  #---------------------------------------------------------------------------------
+  code, state_profiling_table_raw, atom_profiling_table_raw \
+  	= scg.gencode_states(dto, dbo, wcg, APPDIRNAME, GEN_BLOCK_DEBUG, atom_profiling_table_raw, atomnamemap, atom_code_table)
+  #---------------------------------------------------------------------------------
+  state_profiling_table_out = ''
+  state_profiling_table_raw = sorted(state_profiling_table_raw.items())
+  for row in state_profiling_table_raw:
+    state_profiling_table_out += "%d,%s\n" % row
+  state_profiling_table = state_profiling_table_out
+
+  atom_profiling_table_out = ''
+  for row in atom_profiling_table_raw:
+    atom_profiling_table_out += ','.join(row) + '\n'
+  atom_profiling_table = atom_profiling_table_out
+  #print atom_profiling_table
+  #sys.exit(1)
+
+
+  states_allcode_h = code[0]
+  states_allcode_c = code[1]
+  logger.debug('code_states_h_file:\n-----------------\n%s\n' % states_allcode_h)
+  logger.debug('code_states_c_file:\n-----------------\n%s\n' % states_allcode_c)
+
+  #---------------------------------------------------------------------------------
+  code = \
+  	acg.gencode_atom_debug_setup(atom_profiling_table, atoms_to_debug, atoms_to_identify, GEN_BLOCK_DEBUG)
+  #---------------------------------------------------------------------------------
+  atom_debug_allcode_h = code[0]
+  atom_debug_allcode_c = code[1]
+  
+  atoms_allcode_h += atom_debug_allcode_h
+  atoms_allcode_c += atom_debug_allcode_c
+
+
+  ###########################
+  pc = ProgramConstructor(logger)
+
+  pc.add_atoms(ATOM_DB)
+  pc.add_fifos(FIFO_DB)
+  pc.add_wires(WIRE_DB)
+  pc.add_conf(CONF_DB)
+
+  pc.add_actions(AXN_DB)
+  STATE_DB = join_statedb_statepdb(STATE_DB, STATEP_DB)
+  pc.add_states(STATE_DB, initStateName)
+
+  pc.analyze()
+  pc.draw()
+
+  #export R1 format flowgraphs and states
+  r1cg = R1CodeGenerator(logger)
+  r1cg.gencode_r1(pc)
+
+  ###########################
+
+
+  fifos_h_BaseName = \
+  codegen_write_out_fifos(\
+  	atoms_h_BaseName, \
+  	fifos_h_file, \
+	fifos_c_file, \
+	fifos_allcode_h, \
+	fifos_allcode_c \
+	)
+
+  atoms_h_BaseName = \
+  codegen_write_out_atoms(\
+  	fifos_h_BaseName,
+  	atoms_h_file, \
+	atoms_c_file, \
+	atoms_allcode_h, \
+	atoms_allcode_c \
+	)
+
+  actions_h_BaseName = \
+  codegen_write_out_actions(\
+	TIMESTAMP_CONFIG, \
+	atoms_h_BaseName,
+  	actions_h_file, \
+	actions_c_file, \
+	actions_allcode_h, \
+	actions_allcode_c, \
+	axn_profiling_table, \
+	axn_profiling_table_file, \
+	atom_profiling_table, \
+	atom_profiling_table_file \
+	)
+
+  codegen_write_out_states(\
+	TIMESTAMP_CONFIG, \
+  	actions_h_BaseName, \
+	atoms_h_BaseName, \
+	fifos_h_BaseName, \
+  	states_h_file, \
+	states_c_file, \
+	states_allcode_h, \
+	states_allcode_c, \
+	state_profiling_table, \
+	state_profiling_table_file \
+	)
+
+
+
+if __name__ == "__main__":
+  logger = create_logger(LOGFILE)
+  logger.info('invoking planex compiler')
+
+  v_sqlite3 = '3.6.19'
+  if (sqlite3.sqlite_version < v_sqlite3):
+    print_line()
+    logger.error('sqlite3 version needs to be >= %s' % v_sqlite3)
+    print_line()
+    sys.exit(1)
+
+  main()
+

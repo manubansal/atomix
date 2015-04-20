@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<configurations XML_version="1.2" id="configurations_0">
+<configuration XML_version="1.2" id="Texas Instruments XDS100v2 USB Emulator_0">
+        <instance XML_version="1.2" desc="Texas Instruments XDS100v2 USB Emulator_0" href="connections/TIXDS100v2_Connection.xml" id="Texas Instruments XDS100v2 USB Emulator_0" xml="TIXDS100v2_Connection.xml" xmlpath="connections"/>
+        <connection XML_version="1.2" id="Texas Instruments XDS100v2 USB Emulator_0">
+            <instance XML_version="1.2" href="drivers/tixds100v2icepick_d.xml" id="drivers" xml="tixds100v2icepick_d.xml" xmlpath="drivers"/>
+            <instance XML_version="1.2" href="drivers/tixds100v2c66xx.xml" id="drivers" xml="tixds100v2c66xx.xml" xmlpath="drivers"/>
+            <instance XML_version="1.2" href="drivers/tixds100v2cs_dap.xml" id="drivers" xml="tixds100v2cs_dap.xml" xmlpath="drivers"/>
+            <platform XML_version="1.2" id="platform_0">
+                <instance XML_version="1.2" desc="NYQUIST_0" href="devices/nyquist_tms320c66xx.xml" id="NYQUIST_0" xml="nyquist_tms320c66xx.xml" xmlpath="devices"/>
+            <device HW_revision="1" XML_version="1.2" description="NYSH" id="NYQUIST_0" partnum="NYQUIST" simulation="no">
+                    <router HW_revision="1.0" XML_version="1.2" desc="IcePick_D_0" description="ICEPick_D Router" id="IcePick_D_0" isa="ICEPICK_D">
+                        <subpath desc="subpath_00" id="subpath_0">
+                            <cpu HW_revision="1.0" XML_version="1.2" desc="C66xx_00" description="C66xx CGEM+FP CPU" deviceSim="false" id="C66xx_0" isa="TMS320C66xx">
+                                <property Type="filepathfield" Value="gel/EVMTCI6616_memconf1.gel" id="GEL File"/>
+                            </cpu>
+                        </subpath>
+                        <subpath desc="subpath_01" id="subpath_1">
+                            <cpu HW_revision="1.0" XML_version="1.2" desc="C66xx_01" description="C66xx CGEM+FP CPU" deviceSim="false" id="C66xx_1" isa="TMS320C66xx">
+                                <property Type="filepathfield" Value="gel/EVMTCI6616_memconf1.gel" id="GEL File"/>
+                            </cpu>
+                        </subpath>
+                        <subpath desc="subpath_02" id="subpath_2">
+                            <cpu HW_revision="1.0" XML_version="1.2" desc="C66xx_02" description="C66xx CGEM+FP CPU" deviceSim="false" id="C66xx_2" isa="TMS320C66xx">
+                                <property Type="filepathfield" Value="gel/EVMTCI6616_memconf1.gel" id="GEL File"/>
+                            </cpu>
+                        </subpath>
+                        <subpath desc="subpath_03" id="subpath_3">
+                            <cpu HW_revision="1.0" XML_version="1.2" desc="C66xx_03" description="C66xx CGEM+FP CPU" deviceSim="false" id="C66xx_3" isa="TMS320C66xx">
+                                <property Type="filepathfield" Value="gel/EVMTCI6616_memconf1.gel" id="GEL File"/>
+                            </cpu>
+                        </subpath>
+                    <subpath desc="DAP_0" id="subpath_4">
+                            <router HW_revision="1.0" XML_version="1.2" desc="CS_DAP_DebugSS_0" description="CS_DAP Router" id="CS_DAP_0" isa="CS_DAP"/>
+                        </subpath>
+                    </router>
+                </device>
+                <instance XML_version="1.2" desc="NYQUIST_1" href="devices/nyquist_tms320c66xx.xml" id="NYQUIST_1" xml="nyquist_tms320c66xx.xml" xmlpath="devices"/>
+                <device HW_revision="1" XML_version="1.2" description="NYSH" id="NYQUIST_1" partnum="NYQUIST" simulation="no">
+                    <router HW_revision="1.0" XML_version="1.2" desc="IcePick_D_1" description="ICEPick_D Router" id="IcePick_D_0" isa="ICEPICK_D">
+                        <subpath desc="subpath_10" id="subpath_0">
+                            <cpu HW_revision="1.0" XML_version="1.2" desc="C66xx_10" description="C66xx CGEM+FP CPU" deviceSim="false" id="C66xx_0" isa="TMS320C66xx">
+                                <property Type="filepathfield" Value="gel/EVMTCI6616_memconf1.gel" id="GEL File"/>
+                            </cpu>
+                        </subpath>
+                        <subpath desc="subpath_11" id="subpath_1">
+                            <cpu HW_revision="1.0" XML_version="1.2" desc="C66xx_11" description="C66xx CGEM+FP CPU" deviceSim="false" id="C66xx_1" isa="TMS320C66xx">
+                                <property Type="filepathfield" Value="gel/EVMTCI6616_memconf1.gel" id="GEL File"/>
+                            </cpu>
+                        </subpath>
+                        <subpath desc="subpath_12" id="subpath_2">
+                            <cpu HW_revision="1.0" XML_version="1.2" desc="C66xx_12" description="C66xx CGEM+FP CPU" deviceSim="false" id="C66xx_2" isa="TMS320C66xx">
+                                <property Type="filepathfield" Value="gel/EVMTCI6616_memconf1.gel" id="GEL File"/>
+                            </cpu>
+                        </subpath>
+                        <subpath desc="subpath_13" id="subpath_3">
+                            <cpu HW_revision="1.0" XML_version="1.2" desc="C66xx_13" description="C66xx CGEM+FP CPU" deviceSim="false" id="C66xx_3" isa="TMS320C66xx">
+                                <property Type="filepathfield" Value="gel/EVMTCI6616_memconf1.gel" id="GEL File"/>
+                            </cpu>
+                        </subpath>
+                        <subpath desc="DAP_1" id="subpath_4">
+                            <router HW_revision="1.0" XML_version="1.2" desc="CS_DAP_DebugSS_1" description="CS_DAP Router" id="CS_DAP_0" isa="CS_DAP"/>
+                        </subpath>
+                    </router>
+                </device>
+            </platform>
+        </connection>
+    </configuration>
+</configurations>

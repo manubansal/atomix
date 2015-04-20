@@ -1,0 +1,13 @@
+Scenario description:
+
+Algorithmic flowgraph:
+A --> B 
+
+System flowgraph:
+A --> T --> B
+
+Schedule:
+C1	C2
+----------
+A	B
+T

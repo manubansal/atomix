@@ -1,0 +1,24 @@
+
+# Atomix project, states.or, TODO: insert summary here
+# Copyright (c) 2015 Stanford University
+# Released under the Apache License v2.0. See the LICENSE file for details.
+# Author(s): Manu Bansal
+
+#<command==action>:<axnName>:<atomseq>
+#<command==state>:<stateName>:<stateNum>:<coreNum>:<action|noaxn>:<atomseq>
+#DEPRECATED <command==decway>....
+#where atomseq = (atomname;)+ (note that a semicolon must follow each
+#atom in the sequence, even the last one.)
+#
+action: axn1_0: x ; t;
+action: axn1_1: y ;
+#
+state : state1
+#
+statep: state1: 0: axn1_0 : 
+statep: state1: 1: axn1_1 : 
+statep: state1: 2: noaxn  : 
+statep: state1: 3: noaxn  :
+#
+#<command=statei>:<initState>:<iterCount>
+statei: state1: 20

@@ -1,0 +1,19 @@
+
+# Atomix project, fifos.or, TODO: insert summary here
+# Copyright (c) 2015 Stanford University
+# Released under the Apache License v2.0. See the LICENSE file for details.
+# Author(s): Manu Bansal
+
+#<command==fifo>, <instancename>, <numbufs>, <bufsize_bytes>, <coreid>
+#DEPRECATED: <command==link>, <instancename>, <instancename>, <pull|push>
+#<command==link>, <instancename>, <instancename>, <coreid of the transfer block>
+fifo, ff1, 4, 32, 1
+fifo, ff2, 4, 32, 1
+fifo, ff3, 4, 32, 2
+fifo, ff4, 4, 32, 2
+fifo, ff5, 1, 8, 1
+fifo, ff6, 1, 8, 1
+fifo, ff7, 1, 8, 2
+fifo, ff8, 1, 8, 2
+link, ff6, ff7, 1
+link, ff8, ff5, 2

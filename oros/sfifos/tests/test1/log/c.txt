@@ -1,0 +1,100 @@
+[C66xx_01] f1     = 008016e0
+[C66xx_01] f1->fr = 128016e0
+[C66xx_01] f1 bufferSizeInBytes: 4
+[C66xx_01] f1 nBuffersInFifo   : 3
+[C66xx_01] f1 locatedOnCoreId  : 1
+												[C66xx_02] f1     = 008016e0
+												[C66xx_02] f1->fr = 118016e0
+												[C66xx_02] f1 bufferSizeInBytes: 4
+												[C66xx_02] f1 nBuffersInFifo   : 3
+												[C66xx_02] f1 locatedOnCoreId  : 2
+												[C66xx_02] doCore2
+												[C66xx_02] Next in-order read buffer is not yet filled, waiting...
+[C66xx_01] doCore1
+[C66xx_01] doCore1: iteration 0
+[C66xx_01] Write buffer available
+[C66xx_01] A: Filled buffer seq no.  0
+[C66xx_01] Write buffer available
+[C66xx_01] Read buffer available
+[C66xx_01] T: Transfering 1 words from src 0x11801708 to dst 0x12801708
+[C66xx_01] doCore1: iteration 1
+[C66xx_01] Write buffer available
+[C66xx_01] A: Filled buffer seq no.  1
+[C66xx_01] Write buffer available
+[C66xx_01] Read buffer available
+[C66xx_01] T: Transfering 1 words from src 0x1180170c to dst 0x1280170c
+[C66xx_01] doCore1: iteration 2
+[C66xx_01] Write buffer available
+[C66xx_01] A: Filled buffer seq no.  2
+[C66xx_01] Write buffer available
+[C66xx_01] Read buffer available
+[C66xx_01] T: Transfering 1 words from src 0x11801710 to dst 0x12801710
+[C66xx_01] doCore1: iteration 3
+[C66xx_01] Write buffer available
+[C66xx_01] A: Filled buffer seq no.  3
+[C66xx_01] Next in-order write buffer is not yet empty, waiting...
+												[C66xx_02] Read buffer available
+												[C66xx_02] B: Read   buffer seq no.  0
+												[C66xx_02] Read buffer available
+												[C66xx_02] B: Read   buffer seq no.  1
+												[C66xx_02] Read buffer available
+												[C66xx_02] B: Read   buffer seq no.  2
+												[C66xx_02] Next in-order read buffer is not yet filled, waiting...
+[C66xx_01] Write buffer available
+[C66xx_01] Read buffer available
+[C66xx_01] T: Transfering 1 words from src 0x11801708 to dst 0x12801708
+[C66xx_01] doCore1: iteration 4
+[C66xx_01] Write buffer available
+[C66xx_01] A: Filled buffer seq no.  4
+[C66xx_01] Write buffer available
+[C66xx_01] Read buffer available
+[C66xx_01] T: Transfering 1 words from src 0x1180170c to dst 0x1280170c
+[C66xx_01] doCore1: iteration 5
+[C66xx_01] Write buffer available
+[C66xx_01] A: Filled buffer seq no.  5
+[C66xx_01] Write buffer available
+[C66xx_01] Read buffer available
+[C66xx_01] T: Transfering 1 words from src 0x11801710 to dst 0x12801710
+[C66xx_01] doCore1: iteration 6
+[C66xx_01] Write buffer available
+[C66xx_01] A: Filled buffer seq no.  6
+[C66xx_01] Next in-order write buffer is not yet empty, waiting...
+												[C66xx_02] Read buffer available
+												[C66xx_02] B: Read   buffer seq no.  3
+												[C66xx_02] Read buffer available
+												[C66xx_02] B: Read   buffer seq no.  4
+												[C66xx_02] Read buffer available
+												[C66xx_02] B: Read   buffer seq no.  5
+												[C66xx_02] Next in-order read buffer is not yet filled, waiting...
+[C66xx_01] Write buffer available
+[C66xx_01] Read buffer available
+[C66xx_01] T: Transfering 1 words from src 0x11801708 to dst 0x12801708
+[C66xx_01] doCore1: iteration 7
+[C66xx_01] Write buffer available
+[C66xx_01] A: Filled buffer seq no.  7
+[C66xx_01] Write buffer available
+[C66xx_01] Read buffer available
+[C66xx_01] T: Transfering 1 words from src 0x1180170c to dst 0x1280170c
+[C66xx_01] doCore1: iteration 8
+[C66xx_01] Write buffer available
+[C66xx_01] A: Filled buffer seq no.  8
+[C66xx_01] Write buffer available
+[C66xx_01] Read buffer available
+[C66xx_01] T: Transfering 1 words from src 0x11801710 to dst 0x12801710
+[C66xx_01] doCore1: iteration 9
+[C66xx_01] Write buffer available
+[C66xx_01] A: Filled buffer seq no.  9
+[C66xx_01] Next in-order write buffer is not yet empty, waiting...
+												[C66xx_02] Read buffer available
+												[C66xx_02] B: Read   buffer seq no.  6
+												[C66xx_02] Read buffer available
+												[C66xx_02] B: Read   buffer seq no.  7
+												[C66xx_02] Read buffer available
+												[C66xx_02] B: Read   buffer seq no.  8
+												[C66xx_02] Next in-order read buffer is not yet filled, waiting...
+[C66xx_01] Write buffer available
+[C66xx_01] Read buffer available
+[C66xx_01] T: Transfering 1 words from src 0x11801708 to dst 0x12801708
+												[C66xx_02] Read buffer available
+												[C66xx_02] B: Read   buffer seq no.  9
+

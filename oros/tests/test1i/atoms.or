@@ -1,0 +1,100 @@
+
+# Atomix project, atoms.or, TODO: insert summary here
+# Copyright (c) 2015 Stanford University
+# Released under the Apache License v2.0. See the LICENSE file for details.
+# Author(s): Manu Bansal
+
+#<command==atom>: <instancename>: <typename>: <core id>
+#<command==wire>: <instancename>: <fifo1>: [fifo2]: ...
+#<command==pars>: <instancename>: <par1>: [par2]: ...
+atom: kk0: BlockKK: 0
+atom: kk1: BlockKK: 1
+atom: kk2: BlockKK: 2
+atom: kk3: BlockKK: 3
+#
+atom: tr_1_0: BlockTR: 0
+atom: tr_1_1: BlockTR: 1
+atom: tr_1_2: BlockTR: 2
+atom: tr_1_3: BlockTR: 3
+atom: tr_2_0: BlockTR: 0
+atom: tr_2_1: BlockTR: 1
+atom: tr_2_2: BlockTR: 2
+atom: tr_2_3: BlockTR: 3
+atom: tr_3_0: BlockTR: 0
+atom: tr_3_1: BlockTR: 1
+atom: tr_3_2: BlockTR: 2
+atom: tr_3_3: BlockTR: 3
+#
+atom: x_1_1: BlockX: 1
+atom: x_2_2: BlockX: 2
+atom: x_3_3: BlockX: 3
+atom: y_2_2: BlockY: 2
+atom: y_3_3: BlockY: 3
+atom: a_2_2: BlockA: 2
+atom: b_3_3: BlockB: 3
+#
+atom: dx_1_1: BlockDX: 1
+atom: j_2_2 : BlockJ : 2
+atom: j_3_3 : BlockJ : 3
+#
+atom: cp_1_1: BlockCP: 1
+atom: cp_2_2: BlockCP: 2
+atom: cp_3_3: BlockCP: 3
+#
+wire:kk0:ff_kk0
+wire:kk1:ff_kk1
+wire:kk2:ff_kk2
+wire:kk3:ff_kk3
+#
+wire:x_1_1:ff_x_1_1
+wire:x_2_2:ff_x_2_2
+wire:x_3_3:ff_x_3_3
+wire:a_2_2:ff_x_2_2:ff_a_2_2
+wire:b_3_3:ff_x_3_3:ff_b_3_3
+wire:y_2_2:ff_a_2_2
+wire:y_3_3:ff_b_3_3
+#
+wire:dx_1_1:ff_x_1_1:ff_dx_1_1
+wire:j_2_2:ff_j_2_2
+wire:j_3_3:ff_j_3_3
+#
+wire:cp_1_1:ff_dx_1_1,ff_cp_1_1_0,ff_cp_1_1_1,ff_cp_1_1_2,ff_cp_1_1_3
+wire:cp_2_2:ff_j_2_2,ff_cp_2_2_0,ff_cp_2_2_1,ff_cp_2_2_2,ff_cp_2_2_3
+wire:cp_3_3:ff_j_3_3,ff_cp_3_3_0,ff_cp_3_3_1,ff_cp_3_3_2,ff_cp_3_3_3
+#
+wire:tr_1_0:ff_cp_1_1_0:ff_kk0
+wire:tr_1_1:ff_cp_1_1_1:ff_kk1
+wire:tr_1_2:ff_cp_1_1_2:ff_kk2
+wire:tr_1_3:ff_cp_1_1_3:ff_kk3
+#
+wire:tr_2_0:ff_cp_2_2_0:ff_kk0
+wire:tr_2_1:ff_cp_2_2_1:ff_kk1
+wire:tr_2_2:ff_cp_2_2_2:ff_kk2
+wire:tr_2_3:ff_cp_2_2_3:ff_kk3
+#
+wire:tr_3_0:ff_cp_3_3_0:ff_kk0
+wire:tr_3_1:ff_cp_3_3_1:ff_kk1
+wire:tr_3_2:ff_cp_3_3_2:ff_kk2
+wire:tr_3_3:ff_cp_3_3_3:ff_kk3
+#
+conf:dx_1_1:sta_start,sta_trinc,sta_trdec
+conf:j_2_2:sta_start
+conf:j_3_3:sta_start
+#
+conf:tr_1_0:ROUND_UP_N_BYTES_TO_DOUBLE_WORD_MULTIPLE(sizeof(Decision_t))
+conf:tr_1_1:ROUND_UP_N_BYTES_TO_DOUBLE_WORD_MULTIPLE(sizeof(Decision_t))
+conf:tr_1_2:ROUND_UP_N_BYTES_TO_DOUBLE_WORD_MULTIPLE(sizeof(Decision_t))
+conf:tr_1_3:ROUND_UP_N_BYTES_TO_DOUBLE_WORD_MULTIPLE(sizeof(Decision_t))
+conf:cp_1_1:ROUND_UP_N_BYTES_TO_DOUBLE_WORD_MULTIPLE(sizeof(Decision_t))
+#
+conf:tr_2_0:ROUND_UP_N_BYTES_TO_DOUBLE_WORD_MULTIPLE(sizeof(Decision_t))
+conf:tr_2_1:ROUND_UP_N_BYTES_TO_DOUBLE_WORD_MULTIPLE(sizeof(Decision_t))
+conf:tr_2_2:ROUND_UP_N_BYTES_TO_DOUBLE_WORD_MULTIPLE(sizeof(Decision_t))
+conf:tr_2_3:ROUND_UP_N_BYTES_TO_DOUBLE_WORD_MULTIPLE(sizeof(Decision_t))
+conf:cp_2_2:ROUND_UP_N_BYTES_TO_DOUBLE_WORD_MULTIPLE(sizeof(Decision_t))
+#
+conf:tr_3_0:ROUND_UP_N_BYTES_TO_DOUBLE_WORD_MULTIPLE(sizeof(Decision_t))
+conf:tr_3_1:ROUND_UP_N_BYTES_TO_DOUBLE_WORD_MULTIPLE(sizeof(Decision_t))
+conf:tr_3_2:ROUND_UP_N_BYTES_TO_DOUBLE_WORD_MULTIPLE(sizeof(Decision_t))
+conf:tr_3_3:ROUND_UP_N_BYTES_TO_DOUBLE_WORD_MULTIPLE(sizeof(Decision_t))
+conf:cp_3_3:ROUND_UP_N_BYTES_TO_DOUBLE_WORD_MULTIPLE(sizeof(Decision_t))

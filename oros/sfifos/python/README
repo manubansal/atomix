@@ -1,0 +1,3 @@
+Run the following to generate C content into inc/ and src/:
+
+$ python bufferTypes.py

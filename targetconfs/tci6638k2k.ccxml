@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<configurations XML_version="1.2" id="configurations_0">
+
+
+<configuration XML_version="1.2" id="Texas Instruments XDS2xx USB Emulator_0">
+        <instance XML_version="1.2" desc="Texas Instruments XDS2xx USB Emulator_0" href="connections/TIXDS2XXUSB_Connection.xml" id="Texas Instruments XDS2xx USB Emulator_0" xml="TIXDS2XXUSB_Connection.xml" xmlpath="connections"/>
+        <connection XML_version="1.2" id="Texas Instruments XDS2xx USB Emulator_0">
+            <instance XML_version="1.2" href="drivers/tixds560icepick_d.xml" id="drivers" xml="tixds560icepick_d.xml" xmlpath="drivers"/>
+            <instance XML_version="1.2" href="drivers/tixds560c66xx.xml" id="drivers" xml="tixds560c66xx.xml" xmlpath="drivers"/>
+            <instance XML_version="1.2" href="drivers/tixds560cs_dap.xml" id="drivers" xml="tixds560cs_dap.xml" xmlpath="drivers"/>
+            <instance XML_version="1.2" href="drivers/tixds560cortexA15.xml" id="drivers" xml="tixds560cortexA15.xml" xmlpath="drivers"/>
+            <instance XML_version="1.2" href="drivers/tixds560csstm.xml" id="drivers" xml="tixds560csstm.xml" xmlpath="drivers"/>
+            <instance XML_version="1.2" href="drivers/tixds560etbcs.xml" id="drivers" xml="tixds560etbcs.xml" xmlpath="drivers"/>
+            <platform XML_version="1.2" id="platform_0">
+                <instance XML_version="1.2" desc="TCI6638K2K_0" href="devices/TCI6638K2K.xml" id="TCI6638K2K_0" xml="TCI6638K2K.xml" xmlpath="devices"/>
+                <device HW_revision="1" XML_version="1.2" description="TCI6638K2K" id="TCI6638K2K_0" partnum="TCI6638K2K" simulation="no">
+                    <router HW_revision="1.0" XML_version="1.2" description="ICEPick_D Router" id="IcePick_D_0" isa="ICEPICK_D">
+                        <subpath id="subpath_14">
+                            <router HW_revision="1.0" XML_version="1.2" description="CS_DAP Router" id="CS_DAP_0" isa="CS_DAP">
+                                <subpath id="cortexA15_0">
+                                    <cpu HW_revision="1.0" XML_version="1.2" desc="CortexA15_1" description="CortexA15 CPU" deviceSim="false" id="CortexA15_0" isa="CortexA15"/>
+                                </subpath>
+                                <subpath desc="cortexA15_2" id="cortexA15_1">
+                                    <cpu HW_revision="1.0" XML_version="1.2" desc="CortexA15_3" description="CortexA15 CPU" deviceSim="false" id="CortexA15_1" isa="CortexA15"/>
+                                </subpath>
+                                <subpath desc="cortexA15_4" id="cortexA15_2">
+                                    <cpu HW_revision="1.0" XML_version="1.2" desc="CortexA15_5" description="CortexA15 CPU" deviceSim="false" id="CortexA15_2" isa="CortexA15"/>
+                                </subpath>
+                                <subpath desc="cortexA15_6" id="cortexA15_3">
+                                    <cpu HW_revision="1.0" XML_version="1.2" desc="CortexA15_7" description="CortexA15 CPU" deviceSim="false" id="CortexA15_3" isa="CortexA15"/>
+                                </subpath>
+                            </router>
+                        </subpath>
+                    <subpath id="subpath_1">
+                            <cpu HW_revision="1.0" XML_version="1.2" description="C66xx CGEM+FP CPU" id="C66xx_0" isa="TMS320C66XX">
+                                <property Type="filepathfield" Value="../../emulation/boards/xtcievmk2x/gel/xtcievmk2x.gel" id="GEL File"/>
+                            </cpu>
+                        </subpath>
+                        <subpath id="subpath_2">
+                            <cpu HW_revision="1.0" XML_version="1.2" description="C66xx CGEM+FP CPU" id="C66xx_1" isa="TMS320C66XX">
+                                <property Type="filepathfield" Value="../../emulation/boards/xtcievmk2x/gel/xtcievmk2x.gel" id="GEL File"/>
+                            </cpu>
+                        </subpath>
+                        <subpath id="subpath_3">
+                            <cpu HW_revision="1.0" XML_version="1.2" description="C66xx CGEM+FP CPU" id="C66xx_2" isa="TMS320C66XX">
+                                <property Type="filepathfield" Value="../../emulation/boards/xtcievmk2x/gel/xtcievmk2x.gel" id="GEL File"/>
+                            </cpu>
+                        </subpath>
+                        <subpath id="subpath_4">
+                            <cpu HW_revision="1.0" XML_version="1.2" description="C66xx CGEM+FP CPU" id="C66xx_3" isa="TMS320C66XX">
+                                <property Type="filepathfield" Value="../../emulation/boards/xtcievmk2x/gel/xtcievmk2x.gel" id="GEL File"/>
+                            </cpu>
+                        </subpath>
+                        <subpath id="subpath_5">
+                            <cpu HW_revision="1.0" XML_version="1.2" description="C66xx CGEM+FP CPU" id="C66xx_4" isa="TMS320C66XX">
+                                <property Type="filepathfield" Value="../../emulation/boards/xtcievmk2x/gel/xtcievmk2x.gel" id="GEL File"/>
+                            </cpu>
+                        </subpath>
+                    </router>
+                </device>
+            </platform>
+        </connection>
+    </configuration>
+</configurations>

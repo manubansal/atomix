@@ -1,0 +1,399 @@
+#!/bin/bash
+
+if [[ $# -lt 1 || $1 = "-h" ]]; then
+  echo "Usage: $0 <id>"
+  exit
+fi
+
+REFDIR=${WIFIBB_TRACES}/data
+REFDIR_B=${WIFIBB_TRACES}/bdata
+#TRACEDIR=/cygdrive/d/workspace/orsys-build-debug.memconf1.none/app/wifirx54mc/trace
+TRACEDIR=.
+
+#CONFSTR=rate54.snrInf.nmsgs1.scale1.41.
+CONFSTR=rate54.snr19.nmsgs1.scale1.41.
+
+if [[ $1 = 0 ]]; then
+  d=`pwd`
+  cd $TRACEDIR
+  parsedat -a ../atom_profiling_table.txt -d ../atom_db.txt
+  cd $d
+fi
+
+if [[ $1 = 1 ]]; then
+  BUFN=$2
+  parsedat -v -s $BUFN -r $REFDIR_B/txpkt.dat -b 80 -S $BUFN $TRACEDIR/traceReader80.bho0.sampleBuf.*.dat
+fi
+
+if [[ $1 = 101 ]]; then
+  parsedat -v -r $REFDIR_B/${CONFSTR}ltfRxSamples.mdat -b 160 $TRACEDIR/chEstLTF.bhi0.inpLtfsBuf.ORILIB_t_Cplx16Buf160.dat
+fi
+
+if [[ $1 = 102 ]]; then
+  parsedat -v -r $REFDIR_B/${CONFSTR}ltfRxSamples.mdat -b 160 $TRACEDIR/bufAlign.bho0.alignedRawSampleBuf.*.dat
+fi
+
+if [[ $1 = 105 ]]; then
+  sB=`expr 2 \* 80 \* 4`
+  SB=`expr 4 \* 324 \* 4 + 8`
+  parsedat -v -c list -b 320 --skip-ref-bytes $sB -r $TRACEDIR/traceReader80.bho0.sampleBuf.*.dat --skip-test-bytes $SB $TRACEDIR/pktDetect.bho0.outAlignState*.dat   
+fi
+
+if [[ $1 = 106 ]]; then
+  sB=`expr 4 \* 324 \* 4 + 8`
+  SB=8
+  parsedat -v -c list -b 320 --skip-ref-bytes $sB -r $TRACEDIR/pktDetect.bho0.outAlignState*.dat  --skip-test-bytes $SB $TRACEDIR/bufAlign.bhi1.alignStateInp*.dat
+fi
+
+if [[ $1 = 107 ]]; then
+  sB=8
+  SB=`expr 1 \* 324 \* 4 + 8`
+  parsedat -v -c list -b 320 --skip-ref-bytes $sB -r $TRACEDIR/bufAlign.bhi1.alignStateInp*.dat  --skip-test-bytes $SB $TRACEDIR/bufAlign.bhi1.alignStateInp*.dat
+fi
+
+
+
+if [[ $1 = 2 ]]; then
+  parsedat -v -r $REFDIR_B/${CONFSTR}plcpBaseSamples.mdat -b 80 -S 2 $TRACEDIR/bufAlign.bho0.alignedRawSampleBuf.*.dat
+fi
+
+if [[ $1 = 3 ]]; then
+  parsedat -v -r $REFDIR_B/${CONFSTR}plcpCfoCorrected.mdat -b 80 $TRACEDIR/plcpCfoCorrectorG.bho0.*.dat
+fi
+
+if [[ $1 = 4 ]]; then
+  parsedat -vv -r $REFDIR_B/${CONFSTR}plcpOfdmDemod.mdat -b 48 -c cplx-normalized $TRACEDIR/plcpOfdmDemod.bho0.*.dat
+fi
+
+if [[ $1 = 5 ]]; then
+  parsedat -v -r $REFDIR_B/${CONFSTR}plcpOfdmEq.channel_dsubc.mdat -b 48 -c cplx-normalized $TRACEDIR/plcpOfdmEq.bhi2.bufInpChState.ORILIB_ChEstimatorLTF_t_State.dat
+fi
+
+if [[ $1 = 6 ]]; then
+  parsedat -v -r $REFDIR_B/${CONFSTR}plcpOfdmEq.channel_psubc.mdat -b 4 -c cplx-normalized -S 48 $TRACEDIR/plcpOfdmEq.bhi2.bufInpChState.ORILIB_ChEstimatorLTF_t_State.dat	#skip 48 buffer-size worth; buffer size is 4 CPLX16's, there are 192 CPLX16's to be skipped before pilot channel is found in the struct, hence 48 skip
+fi
+
+if [[ $1 = 7 ]]; then
+  parsedat -v -r $REFDIR_B/${CONFSTR}plcpOfdmEq.eqPnts.mdat -b 48 -c cplx-normalized $TRACEDIR/plcpOfdmEq.bho0.bufOutEqualizedPnts.ORILIB_t_Cplx16Buf48.dat
+fi
+
+if [[ $1 = 8 ]]; then
+  parsedat -v -r $REFDIR_B/${CONFSTR}plcpDemap.mdat -b 48 -c normalized -t INT8 $TRACEDIR/plcpSoftSlicerBPSK.bho0.*.dat
+fi
+
+
+#data portion
+if [[ $1 = 20 ]]; then
+  #parsedat -v -t CPLXDBL -r $REFDIR_B/${CONFSTR}dataBaseSamples.mdat -b 80 -T CPLX16 -S 3 $TRACEDIR/bufAlign.bho0.alignedRawSampleBuf.*.dat
+  BUFN=$2
+  s=$BUFN
+  S=`expr $s + 3`
+  echo s=$s, S=$S
+  parsedat -v -t CPLXDBL -s $s -r $REFDIR_B/${CONFSTR}dataBaseSamples.mdat -b 80 -T CPLX16 -S $S $TRACEDIR/bufAlign.bho0.alignedRawSampleBuf.*.dat
+fi
+
+if [[ $1 = 23 ]]; then
+  parsedat -v -r $REFDIR_B/${CONFSTR}dataCfoCorrected.mdat -t CPLXDBL -b 80 -T CPLX16 $TRACEDIR/dataCfoCorrectorG.bho0.*.dat
+fi
+
+if [[ $1 = 24 ]]; then
+  parsedat -vv -t CPLXDBL -r $REFDIR_B/${CONFSTR}dataOfdmDemod.mdat -b 48 -c cplx-normalized -T CPLX16 $TRACEDIR/dataOfdmDemod.bho0.*.dat
+fi
+
+
+if [[ $1 = 26 ]]; then
+  parsedat -v -t CPLX16 -r $TRACEDIR/data54mOfdmEq.bhi1.bufInpSignNormalizedPilotPnts.ORILIB_t_Cplx16Buf4.dat -b 4 $TRACEDIR/data54mOfdmEq.bhi1.bufInpSignNormalizedPilotPnts.ORILIB_t_Cplx16Buf4.dat
+fi
+
+if [[ $1 = 27 ]]; then
+  parsedat -v -t CPLXDBL -r $REFDIR_B/${CONFSTR}dataOfdmEq.eqPnts.mdat -b 48 -c cplx-normalized -T CPLX16 $TRACEDIR/data54mOfdmEq.bho0.bufOutEqualizedPnts.ORILIB_t_Cplx16Buf48.dat
+  #parsedat -v -t CPLXDBL -r $REFDIR_B/${CONFSTR}dataOfdmEq.eqPnts.mdat -b 384 -c cplx-normalized -T CPLX16 $TRACEDIR/data54mOfdmEq.bho0.bufOutEqualizedPnts.ORILIB_t_Cplx16Buf48.dat
+fi
+
+if [[ $1 = 28 ]]; then
+  BUFN=$2
+  s=$BUFN
+  S=$BUFN
+  echo s=$s, S=$S
+  parsedat -v -s $s -r $REFDIR_B/${CONFSTR}dataDemap.mdat -b 288 -c sign -t INT8 -S $S $TRACEDIR/data54mSoftSlicer64QAM.bho0.*.dat
+fi
+
+if [[ $1 = 29 ]]; then
+  BUFN=$2
+  s=$BUFN
+  S=$BUFN
+  echo s=$s, S=$S
+  parsedat -v -s $s -r $REFDIR_B/${CONFSTR}dataDepunct.mdat -b 432 -c sign -t INT8 -S $S $TRACEDIR/data54mSoftDepuncR3by4F216.bho0.*.dat
+fi
+
+#head-decode in action axnRxDataDecode54m_H_2
+if [[ $1 = 30 ]]; then
+  #BUFN=$2
+  BUFN=0
+  s=$BUFN
+  S=$BUFN
+  echo s=$s, S=$S
+  f=54
+  c=36
+  buflen=`expr 2 \* \( $f + $c \)`
+  echo buflen=$buflen
+  parsedat -b $buflen -v -s $s -r $TRACEDIR/data54mSoftBM216.bho0.*.dat -c direct -t INT8 -S $S $TRACEDIR/data54mBmCacheGetHFrame.bho1.*.dat
+fi
+
+#mid-decode on MFrame 2 in action axnRxDataDecode54m_H_2
+if [[ $1 = 32 ]]; then
+  BUFN=1
+  mids_to_skip=`expr $BUFN - 1`
+  f=54
+  c=36
+  buflen=`expr 2 \* \( $c + $f + $c \)`
+  echo buflen=$buflen
+  sB=`expr 2 \* \( $f - $c + $mids_to_skip \* $f \)`
+  SB=0
+  echo sB=$sB, SB=$SB
+  parsedat -b $buflen -v --skip-ref-bytes $sB -r $TRACEDIR/data54mSoftBM216.bho0.*.dat -c direct -t INT8 --skip-test-bytes $SB $TRACEDIR/data54mBmCacheGetMFrame2.bho1.*.dat
+fi
+
+#mid-decode on MFrame 3 in action axnRxDataDecode54m_H_2
+if [[ $1 = 33 ]]; then
+  BUFN=2
+  mids_to_skip=`expr $BUFN - 1`
+  f=54
+  c=36
+  buflen=`expr 2 \* \( $c + $f + $c \)`
+  echo buflen=$buflen
+  sB=`expr 2 \* \( $f - $c + $mids_to_skip \* $f \)`
+  SB=0
+  echo sB=$sB, SB=$SB
+  parsedat -b $buflen -v --skip-ref-bytes $sB -r $TRACEDIR/data54mSoftBM216.bho0.*.dat -c direct -t INT8 --skip-test-bytes $SB $TRACEDIR/data54mBmCacheGetMFrame3.bho1.*.dat
+fi
+
+#mid-decode on MFrame 0 in action axnRxDataDecode54m_Mp_2
+if [[ $1 = 34 ]]; then
+  BUFN=3
+  mids_to_skip=`expr $BUFN - 1`
+  f=54
+  c=36
+  buflen=`expr 2 \* \( $c + $f + $c \)`
+  echo buflen=$buflen
+  sB=`expr 2 \* \( $f - $c + $mids_to_skip \* $f \)`
+  SB=0
+  echo sB=$sB, SB=$SB
+  parsedat -b $buflen -v --skip-ref-bytes $sB -r $TRACEDIR/data54mSoftBM216.bho0.*.dat -c direct -t INT8 --skip-test-bytes $SB $TRACEDIR/data54mBmCacheGetMFrame0.bho1.*.dat
+fi
+
+#mid-decode on MFrame 1 in action axnRxDataDecode54m_Mp_2
+if [[ $1 = 35 ]]; then
+  BUFN=4
+  mids_to_skip=`expr $BUFN - 1`
+  f=54
+  c=36
+  buflen=`expr 2 \* \( $c + $f + $c \)`
+  echo buflen=$buflen
+  sB=`expr 2 \* \( $f - $c + $mids_to_skip \* $f \)`
+  SB=0
+  echo sB=$sB, SB=$SB
+  parsedat -b $buflen -v --skip-ref-bytes $sB -r $TRACEDIR/data54mSoftBM216.bho0.*.dat -c direct -t INT8 --skip-test-bytes $SB $TRACEDIR/data54mBmCacheGetMFrame1.bho1.*.dat
+fi
+
+#mid-decode on MFrame 2 in action axnRxDataDecode54m_Mp_2
+if [[ $1 = 36 ]]; then
+  BUFN=5
+  mids_to_skip=`expr $BUFN - 1`
+  f=54
+  c=36
+  buflen=`expr 2 \* \( $c + $f + $c \)`
+  echo buflen=$buflen
+  sB=`expr 2 \* \( $f - $c + $mids_to_skip \* $f \)`
+  #SB=`expr 2 \* \( $c + $f + $c \)`
+  SB=800
+  echo sB=$sB, SB=$SB
+  parsedat -b $buflen -v --skip-ref-bytes $sB -r $TRACEDIR/data54mSoftBM216.bho0.*.dat -c direct -t INT8 --skip-test-bytes $SB $TRACEDIR/data54mBmCacheGetMFrame2.bho1.*.dat
+fi
+
+#mid-decode on MFrame 3 in action axnRxDataDecode54m_Mp_3
+if [[ $1 = 37 ]]; then
+  BUFN=6
+  mids_to_skip=`expr $BUFN - 1`
+  f=54
+  c=36
+  buflen=`expr 2 \* \( $c + $f + $c \)`
+  echo buflen=$buflen
+  sB=`expr 2 \* \( $f - $c + $mids_to_skip \* $f \)`
+  #SB=`expr 2 \* \( $c + $f + $c \)`
+  SB=800
+  echo sB=$sB, SB=$SB
+  parsedat -b $buflen -v --skip-ref-bytes $sB -r $TRACEDIR/data54mSoftBM216.bho0.*.dat -c direct -t INT8 --skip-test-bytes $SB $TRACEDIR/data54mBmCacheGetMFrame3.bho1.*.dat
+fi
+
+#mid-decode on MFrame 0 in action axnRxDataDecode54m_M_2
+if [[ $1 = 38 ]]; then
+  BUFN=7
+  mids_to_skip=`expr $BUFN - 1`
+  f=54
+  c=36
+  buflen=`expr 2 \* \( $c + $f + $c \)`
+  echo buflen=$buflen
+  sB=`expr 2 \* \( $f - $c + $mids_to_skip \* $f \)`
+  #SB=`expr 2 \* \( $c + $f + $c \)`
+  SB=800
+  echo sB=$sB, SB=$SB
+  parsedat -b $buflen -v --skip-ref-bytes $sB -r $TRACEDIR/data54mSoftBM216.bho0.*.dat -c direct -t INT8 --skip-test-bytes $SB $TRACEDIR/data54mBmCacheGetMFrame0.bho1.*.dat
+fi
+
+#mid-decode on MFrame 1 in action axnRxDataDecode54m_M_2
+if [[ $1 = 39 ]]; then
+  BUFN=8
+  mids_to_skip=`expr $BUFN - 1`
+  f=54
+  c=36
+  buflen=`expr 2 \* \( $c + $f + $c \)`
+  echo buflen=$buflen
+  sB=`expr 2 \* \( $f - $c + $mids_to_skip \* $f \)`
+  #SB=`expr 2 \* \( $c + $f + $c \)`
+  SB=800
+  echo sB=$sB, SB=$SB
+  parsedat -b $buflen -v --skip-ref-bytes $sB -r $TRACEDIR/data54mSoftBM216.bho0.*.dat -c direct -t INT8 --skip-test-bytes $SB $TRACEDIR/data54mBmCacheGetMFrame1.bho1.*.dat
+fi
+
+#mid-decode on MFrame 2 in action axnRxDataDecode54m_M_2
+if [[ $1 = 40 ]]; then
+  BUFN=9
+  mids_to_skip=`expr $BUFN - 1`
+  f=54
+  c=36
+  buflen=`expr 2 \* \( $c + $f + $c \)`
+  echo buflen=$buflen
+  sB=`expr 2 \* \( $f - $c + $mids_to_skip \* $f \)`
+  #SB=`expr 2 \* \( $c + $f + $c \)`
+  SB=1600
+  echo sB=$sB, SB=$SB
+  parsedat -b $buflen -v --skip-ref-bytes $sB -r $TRACEDIR/data54mSoftBM216.bho0.*.dat -c direct -t INT8 --skip-test-bytes $SB $TRACEDIR/data54mBmCacheGetMFrame2.bho1.*.dat
+fi
+
+
+#tail-decode in action axnRxDataDecode54m_T_2/T_3
+if [[ $1 = 41 ]]; then
+  BUFN=31
+  mids_to_skip=`expr $BUFN - 1`
+  f=54
+  c=36
+  t=6
+  buflen=`expr 2 \* \( $c + $f + $t \)`
+  echo buflen=$buflen
+  sB=`expr 2 \* \( $f - $c + $mids_to_skip \* $f \)`
+  #SB=`expr 2 \* \( $c + $f + $c \)`
+  SB=0
+  echo sB=$sB, SB=$SB
+  parsedat -b $buflen -v --skip-ref-bytes $sB -r $TRACEDIR/data54mSoftBM216.bho0.*.dat -c direct -t INT8 --skip-test-bytes $SB  $TRACEDIR/data54mBmCacheGetTFrame.bho1.*.dat
+fi
+
+
+#tail-decode in action axnRxDataDecode54m_T_2/T_3 with workaround
+if [[ $1 = 42 ]]; then
+  BUFN=31
+  mids_to_skip=`expr $BUFN - 1`
+  f=54
+  c=36
+  buflen=`expr 2 \* \( $c + $f \)`
+  echo buflen=$buflen
+  sB=`expr 2 \* \( $f - $c + $mids_to_skip \* $f \)`
+  SB=0
+  echo sB=$sB, SB=$SB
+  parsedat -b $buflen -v --skip-ref-bytes $sB -r $TRACEDIR/data54mSoftBM216.bho0.*.dat -c direct -t INT8 --skip-test-bytes $SB  $TRACEDIR/data54mBmCacheGetTFrame.bho1.*.dat
+fi
+
+
+#display the full tail buffer
+if [[ $1 = 43 ]]; then
+  f=54
+  c=36
+  buflen=`expr 2 \* \( $c + $f + $c \)`
+  echo buflen=$buflen
+  sB=0
+  SB=0
+  echo sB=$sB, SB=$SB
+  parsedat -b $buflen -v --skip-ref-bytes $sB -r $TRACEDIR/data54mBmCacheGetTFrame.bho1.*.dat -c direct -t INT8 --skip-test-bytes $SB  $TRACEDIR/data54mBmCacheGetTFrame.bho1.*.dat
+fi
+
+
+if [[ $1 = 50 ]]; then
+  #BitBucket512 (512 bits, one bit per byte)
+  #parsedat -v -r $REFDIR_B/${CONFSTR}dataVitdecChunks.mdat -b 64 -c direct -t UINT8 -T PBITS8-msb-first $TRACEDIR/data54mDebugPrintBitBucket.bhi0.inpBitBucket.void.dat
+
+  #BUFN=$2
+  BUFN_L=31
+  for BUFN in `seq 0 $BUFN_L`; do
+    s=$BUFN
+    SB=`expr $s \* 64`
+    echo s=$s, SB=$SB
+    parsedat -s $s -r $REFDIR_B/${CONFSTR}dataVitdecChunks.mdat -b 64 -c direct -t UINT8 -T PBITS8-msb-first --skip-test-bytes $SB $TRACEDIR/data54mDebugPrintBitBucket.bhi0.inpBitBucket.void.dat
+  done
+fi
+
+
+if [[ $1 = 51 ]]; then
+  #BitBucket512 (512 bits, one bit per byte)
+  #parsedat -v -r $REFDIR_B/${CONFSTR}dataVitdecChunks.mdat -b 64 -c direct -t UINT8 -T PBITS8-msb-first $TRACEDIR/data54mDebugPrintBitBucket.bhi0.inpBitBucket.void.dat
+
+  BUFN=$2
+  s=$BUFN
+  SB=`expr $s \* 64`
+  echo s=$s, SB=$SB
+  parsedat -v -s $s -r $REFDIR_B/${CONFSTR}dataVitdecChunks.mdat -b 64 -c direct -t UINT8 -T PBITS8-msb-first --skip-test-bytes $SB $TRACEDIR/data54mDebugPrintBitBucket.bhi0.inpBitBucket.void.dat
+  #parsedat -v -s $s -r $REFDIR_B/${CONFSTR}dataVitdecChunks.mdat -b 64 -c pearson -t UINT8 -T PBITS8-msb-first --skip-test-bytes $SB --reverse-test-buffer $TRACEDIR/data54mDebugPrintBitBucket.bhi0.inpBitBucket.void.dat
+fi
+
+#-----------------------------------------------------------
+
+#data54mDescrambler54
+if [[ $1 = 60 ]]; then
+  #BitBucket512 (512 bits, one bit per byte)
+  #BUFN=0
+  BUFN=$2
+  BUFLEN=54
+  BUFLEN_TEST_BYTES=8
+  sB=`expr $BUFN \* $BUFLEN`
+  SB=`expr $BUFN \* $BUFLEN_TEST_BYTES`
+  echo s=$s, SB=$SB
+  parsedat -v --skip-ref-bytes $sB -r $REFDIR_B/${CONFSTR}dataDescr.mdat -b $BUFLEN -c direct -t UINT8 -T PBITS8-msb-first --skip-test-bytes $SB $TRACEDIR/data54mDescrambler54.bho0.outBuf.void.dat
+fi
+
+#data54mDescrambler54 for partial output since ref data only outputs descrambled data bytes excluding tail and pad
+if [[ $1 = 61 ]]; then
+  #BitBucket512 (512 bits, one bit per byte)
+  #BUFN=$2
+  BUFN=30
+  #BUFLEN_PARTIAL=$3
+  BUFLEN_PARTIAL=28
+  BUFLEN_SKIP=54
+  BUFLEN_TEST_BYTES=8
+  sB=`expr $BUFN \* $BUFLEN_SKIP`
+  SB=`expr $BUFN \* $BUFLEN_TEST_BYTES`
+  echo s=$s, SB=$SB
+  parsedat -v --skip-ref-bytes $sB -r $REFDIR_B/${CONFSTR}dataDescr.mdat -b $BUFLEN_PARTIAL -c direct -t UINT8 -T PBITS8-msb-first --skip-test-bytes $SB $TRACEDIR/data54mDescrambler54.bho0.outBuf.void.dat
+fi
+
+#-----------------------------------------------------------
+
+if [[ $1 = 200 ]]; then
+  #NBUFS=8
+  NBUFS=$2
+  parsedat -v -c plot-const -b 48 -n $NBUFS -t CPLXDBL -o ml_constellation.png $REFDIR_B/${CONFSTR}dataOfdmEq.eqPnts.mdat
+fi
+
+
+if [[ $1 = 201 ]]; then
+  #NBUFS=4
+  NBUFS=$2
+  parsedat -v -c plot-const -b 48 -n $NBUFS -o ti_constellation_dataOfdmDemod.png $TRACEDIR/dataOfdmDemod.bho0.*.dat
+fi
+
+if [[ $1 = 202 ]]; then
+  #NBUFS=4
+  NBUFS=$2
+  parsedat -v -c plot-const -b 48 -n $NBUFS -o ti_constellation.png $TRACEDIR/data54mOfdmEq.bho0.bufOutEqualizedPnts.ORILIB_t_Cplx16Buf48.dat
+fi
+
+#-----------------------------------------------------------
+

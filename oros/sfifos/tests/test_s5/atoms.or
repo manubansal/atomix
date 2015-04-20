@@ -1,0 +1,19 @@
+
+# Atomix project, atoms.or, TODO: insert summary here
+# Copyright (c) 2015 Stanford University
+# Released under the Apache License v2.0. See the LICENSE file for details.
+# Author(s): Manu Bansal
+
+#<command==atom>, <instancename>, <typename>, <core id>
+#<command==wire>, <instancename>, <fifo1>, [fifo2], ...
+#<command==pars>, <instancename>, <par1>, [par2], ...
+atom, x, BlockX, 1
+atom, y, BlockY, 1
+atom, as, BlockAS, 1
+atom, asi, BlockASI, 1
+wire, x, ff1
+wire, y, ff2
+wire, as, ff1, ff3, ff2, ff3
+wire, asi, ff3
+#pars, x, 3, 5
+#pars, t, FIFO_T_TYPE_PUSH

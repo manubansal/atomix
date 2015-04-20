@@ -1,0 +1,430 @@
+#!/usr/bin/python
+
+
+import csv
+import os
+import sys
+import re
+from _scrape_b_i import *
+
+def code_h_fifo_declaration(fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_core_id):
+  code_h = ''
+  code_h += 'extern FIFO_Handle far %s;\n' % fifo_name
+  return code_h
+
+
+def code_c_fifo_declaration(fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_core_id):
+  code_c = ''
+
+  #code_c += '#pragma DATA_SECTION(%s, ".shared_mem");\n' % (fifo_name)
+  code_c += '#pragma DATA_SECTION(%s_state, ".gem%d_data");\n' % (fifo_name, int(fifo_core_id))
+  code_c += '#pragma DATA_SECTION(%s_mem, ".gem%d_data");\n' % (fifo_name, int(fifo_core_id))
+  code_c += '#pragma DATA_ALIGN(%s_mem, 8);\n' % fifo_name
+
+  code_c += 'FIFO_Handle %s;\n' % fifo_name
+  code_c += 'FIFO_State far %s_state;\n' % fifo_name 
+  fifo_total_size_in_bytes = int(fifo_n_buffers) * int(fifo_buffer_size_in_bytes)
+  code_c += 'Uint8 far %s_mem[%s];\n' % (fifo_name, fifo_total_size_in_bytes)
+  code_c += 'FIFO_BufferState far %s_bufferStates[%s];\n' % (fifo_name, fifo_n_buffers)
+  code_c += '\n'
+
+  return code_c
+
+def code_c_fifo_declarationFilled(fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_core_id, fifo_data):
+  code_c = ''
+
+  #code_c += '#pragma DATA_SECTION(%s, ".shared_mem");\n' % (fifo_name)
+  code_c += '#pragma DATA_SECTION(%s_state, ".gem%d_data");\n' % (fifo_name, int(fifo_core_id))
+  code_c += '#pragma DATA_SECTION(%s_mem, ".gem%d_data");\n' % (fifo_name, int(fifo_core_id))
+  code_c += '#pragma DATA_ALIGN(%s_mem, 8);\n' % fifo_name
+
+  code_c += 'FIFO_Handle %s;\n' % fifo_name
+  code_c += 'FIFO_State far %s_state;\n' % fifo_name 
+  fifo_total_size_in_bytes = int(fifo_n_buffers) * int(fifo_buffer_size_in_bytes)
+  code_c += 'Uint8 far %s_mem[%s] = %s;\n' % (fifo_name, fifo_total_size_in_bytes, fifo_data)
+  code_c += 'FIFO_BufferState far %s_bufferStates[%s];\n' % (fifo_name, fifo_n_buffers)
+  code_c += '\n'
+
+  return code_c
+
+def code_c_fifo_setupPtrs(fifo_name):
+  code_c = ''
+
+  code_c += '  %s = &%s_state;\n' % (fifo_name, fifo_name)
+  return code_c
+
+def code_c_fifo_setup(fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_type, fifo_core_id):
+  code_c = ''
+
+#  void FIFO_setupFifo(
+#      FIFO_Handle ff,
+#      FIFO_State *ff_state,
+#      Uint8 ff_mem[],
+#      FIFO_BufferState ff_bufferStates[],
+#      Uint32 ff_BUFFER_SIZE_IN_BYTES,
+#      Uint32 ff_N_BUFFERS,
+#      FIFO_TYPE_SRC_OR_DST ff_type
+#      ) {
+
+  #code_c += '  FIFO_setupFifo(%s, &%s_state, %s_mem, %s_bufferStates, %s, %s, %s);\n' % \
+  #	(fifo_name, fifo_name, fifo_name, fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, 'NONE')
+  #code_c += '  FIFO_setupFifo(%s, &%s_state, %s_mem, %s_bufferStates, %s, %s, %s);\n' % \
+
+  #code_c += '  if (DNUM == %s) {\n' % fifo_core_id
+  #code_c += '  if (DNUM == 0) {\n'
+
+  #code_c += '  %s = &%s_state;\n' % (fifo_name, fifo_name)
+  #code_c += '  CACHE_wbInvAllL1d(CACHE_WAIT);\n'	#touching shared memory
+  #code_c += '  CACHE_wbAllL1d(CACHE_WAIT);\n'	#touching shared memory
+  #code_c += '  CACHE_wbAllL2(CACHE_WAIT);\n'	#touching shared memory
+  if fifo_type == 'src':
+    fifo_c_type = 'FIFO_TYPE_SRC'
+  elif fifo_type == 'dst':
+    fifo_c_type = 'FIFO_TYPE_DST'
+  elif fifo_type == 'sin':
+    fifo_c_type = 'FIFO_TYPE_SINGULAR'
+  else:
+    logger.error('Bad fifo type')
+    exit(1)
+
+  code_c += '  FIFO_setupFifo(%s, %s_mem, %s_bufferStates, %s, %s, %s, %s, 0);\n' % \
+  	(fifo_name, fifo_name, fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_c_type, fifo_core_id)
+  #code_c += '  }\n\n'
+  return code_c
+
+def code_c_fifo_setupFilled(fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_type, fifo_core_id):
+  code_c = ''
+
+  if fifo_type == 'src':
+    fifo_c_type = 'FIFO_TYPE_SRC'
+  elif fifo_type == 'dst':
+    fifo_c_type = 'FIFO_TYPE_DST'
+  elif fifo_type == 'sin':
+    fifo_c_type = 'FIFO_TYPE_SINGULAR'
+  else:
+    logger.debug('Bad fifo type')
+    exit(1)
+
+  code_c += '  FIFO_setupFifo(%s, %s_mem, %s_bufferStates, %s, %s, %s, %s, 1);\n' % \
+  	(fifo_name, fifo_name, fifo_name, fifo_n_buffers, fifo_buffer_size_in_bytes, fifo_c_type, fifo_core_id)
+  #code_c += '  }\n\n'
+  return code_c
+
+#---------------------
+def gencode_block(blockname, ios_list, GEN_BLOCK_DEBUG=True):
+#---------------------
+  allcode_h = ''
+  allcode_c = ''
+
+  inp_list = ios_list[0]
+  out_list = ios_list[1]
+  cf_list = ios_list[2]
+
+  code_blocktype      = 'typedef struct {\n'
+  code_h_setupWiring  = 'void %s_setupWiring (\n' % blockname
+  code_h_setupWiring += '  %s *bli' % blockname
+  code_h_setupDebug   = 'void %s_setupDebug (\n' % blockname
+  code_h_setupDebug  += '  %s *bli' % blockname
+  code_h_do           = 'void %s_do (%s *bli);\n' % (blockname, blockname)
+
+  code_c_setupWiring  = code_h_setupWiring
+  code_c_setupDebug   = code_h_setupDebug
+  code_c_do           = 'void %s_do (%s *bli) {\n' % (blockname, blockname)
+  code_c_do_decl      = '';
+  code_c_do_cmd1      = '';
+  code_c_do_cmd2      = '';
+  code_c_do_cmd3      = '';
+
+  code_c_setupWiring_body = ''
+  code_c_setupDebug_body  = ''
+
+  for i in range(len(inp_list)):
+    code_blocktype   += '  FIFO_Handle ff_inp%d;\n' % i
+    code_h_setupWiring += ',\n  FIFO_Handle ff_inp%d' % i
+    code_c_setupWiring += ',\n  FIFO_Handle ff_inp%d' % i
+    code_c_setupWiring_body += '    bli->ff_inp%d = ff_inp%d;\n' % (i, i)
+    code_c_do_decl     += '  FIFO_BufferHandle bhi%d;\n' % i
+    code_c_do_cmd1     += '  bhi%d = FIFO_getNextReadBuffer(bli->ff_inp%d);\n' % (i, i)
+    code_c_do_cmd2     += '    (%s *)(bhi%d->mem)' % (inp_list[i], i)
+    if (i < len(inp_list) + len(out_list) - 1):
+      code_c_do_cmd2 += ','
+    code_c_do_cmd2     += '\n'
+    code_c_do_cmd3     += '  FIFO_readDone(bli->ff_inp%d, bhi%d);\n' % (i, i)
+
+  for i in range(len(out_list)):
+    code_blocktype += '  FIFO_Handle ff_out%d;\n' % i
+    code_h_setupWiring += ',\n  FIFO_Handle ff_out%d' % i
+    code_c_setupWiring += ',\n  FIFO_Handle ff_out%d' % i
+    code_c_setupWiring_body += '    bli->ff_out%d = ff_out%d;\n' % (i, i)
+    code_c_do_decl     += '  FIFO_BufferHandle bho%d;\n' % i
+    code_c_do_cmd1     += '  bho%d = FIFO_getNextWriteBuffer(bli->ff_out%d);\n' % (i, i)
+    code_c_do_cmd2     += '    (%s *)(bho%d->mem)' % (out_list[i], i)
+    if (i < len(out_list) - 1):
+      code_c_do_cmd2 += ','
+      code_c_do_cmd2 += '\n'
+    code_c_do_cmd3     += '  FIFO_writeDone(bli->ff_out%d, bho%d);\n' % (i, i)
+
+  code_h_setupDebug      += ',\n  Uint32 atomid'
+  code_c_setupDebug      += ',\n  Uint32 atomid'
+  code_c_setupDebug_body += '  \n  bli->atomid = atomid;\n'
+
+  if (len(cf_list) > 1):
+    logger.debug("At most one configuration type (CF) io is allowed")
+    exit(1)
+
+  for i in range(len(cf_list)):
+    code_blocktype     += '  %s blconf;\n' % (cf_list[i])
+    code_c_do_cmd2     += ',\n'
+    code_c_do_cmd2     += '    &(bli->blconf)'
+
+  code_c_do_cmd2     += '\n'
+
+  code_blocktype     += '} %s;\n' % blockname
+  code_h_setupWiring += '\n  );\n'
+  code_c_setupWiring += '\n  ){\n'
+  code_c_setupWiring += code_c_setupWiring_body
+  code_c_setupWiring += '}\n'
+  code_h_setupDebug += '\n  );\n'
+  code_c_setupDebug += '\n  ){\n'
+  code_c_setupDebug += code_c_setupDebug_body
+  code_c_setupDebug += '}\n'
+  code_c_do          += '%s\n' % code_c_do_decl
+  code_c_do          += '%s\n' % code_c_do_cmd1
+  code_c_do          += '  %s_i(\n' % blockname
+  code_c_do          += '%s' % code_c_do_cmd2
+  code_c_do          += '  );\n\n'
+  code_c_do          += '%s\n' % code_c_do_cmd3
+  code_c_do          += '}\n'
+
+
+  if not GEN_BLOCK_DEBUG:
+    code_h_setupDebug = '';
+    code_c_setupDebug = '';
+
+  logger.debug('allcode_h')
+  code = '%s\n%s\n%s\n%s\n' % (code_blocktype, code_h_setupWiring, code_h_setupDebug, code_h_do)
+  logger.debug(code)
+  allcode_h = code
+
+  logger.debug('allcode_c')
+  code = '%s\n%s\n%s\n' % (code_c_setupWiring, code_c_setupDebug, code_c_do)
+  logger.debug(code)
+  allcode_c = code
+    
+  return (allcode_h, allcode_c)
+
+def parse_block_inp_file(block_inp_file):
+  try:
+     with open(block_inp_file, "r") as ifile: pass
+     ifile.close()
+  except IOError as e:
+     logger.error('%s not found in %s' % (block_inp_file, os.getcwd()))
+     exit(1)
+  
+  ifile  = open(block_inp_file, "r")
+  reader = csv.reader(ifile, delimiter=":")
+
+  inp_list = []
+  out_list = []
+
+  cmd_idx 	= 0
+  inp_idx	= 1
+  out_idx	= 1
+
+  commentstring = "#"
+  for row in reader:
+    if row[0].startswith(commentstring):
+      continue
+    logger.debug('row:')
+    logger.debug(row)
+
+    row = [x.strip() for x in row]
+
+    block_cmd = row[cmd_idx]
+    if block_cmd == 'inp':
+      inp_string = row[inp_idx]
+      #inp_row = row[1:]
+      #db_insert_fifo_row(db, fifo_row)
+      inp_list = inp_string.split(',')
+      inp_list = [x.strip() for x in inp_list]
+      logger.debug(inp_list)
+
+    elif block_cmd == 'out':
+      out_string = row[out_idx]
+      #out_row = row[1:]
+      #db_insert_fifo_row(db, fifo_row)
+      out_list = out_string.split(',')
+      out_list = [x.strip() for x in out_list]
+      logger.debug(out_list)
+
+  ios_list = [inp_list, out_list]
+
+  ifile.close()
+  return ios_list
+
+
+def codegen_write_out_block(\
+	blockname, \
+  	block_h_file, \
+	block_c_file, \
+	block_allcode_h, \
+	block_allcode_c \
+	):
+
+  #block_h_CanonicalName = "____FIFOS_H____"
+  block_h_CanonicalName = "__%s_H__" % block_h_file.split("/")[-1].split(".h")[0].upper()
+  block_h_BaseName = block_h_file.split("/")[-1]
+
+  block_h_ = 0
+  block_c_ = 0
+
+
+
+  #----------------------------
+
+  commonHeader = """
+//AUTOMATICALLY GENERATED FILE. DO NOT EDIT. EDITS WILL BE LOST.
+
+#include <osl/inc/swpform.h>
+#include <oros/sfifos/fifoFactory.h>
+#include <oros/sfifos/fifoManager.h>
+
+"""
+
+  block_h_header = """
+#ifndef """ + block_h_CanonicalName + """
+#define """ + block_h_CanonicalName + """
+
+""" + commonHeader + """
+#include "%s_t.h"
+""" % (blockname)
+
+  block_h_tailer = """
+#endif //""" + block_h_CanonicalName + """
+"""
+
+#include <oros/sfifos/python/inc/fifoBufferTypes.h>
+
+  block_c_header = commonHeader + """
+#include "%s_t.h"
+#include "%s_i.h"
+#include "%s"
+
+""" % (blockname, blockname, block_h_BaseName)
+
+  block_c_tailer = """
+"""
+
+  block_h_ = open(block_h_file,'w')
+  block_h_.write(block_h_header)
+
+  block_c_ = open(block_c_file, 'w')
+  block_c_.write(block_c_header)
+
+  block_h_.write(block_allcode_h)
+  block_c_.write(block_allcode_c)
+
+  block_h_.write(block_h_tailer)
+  block_h_.close()
+
+  block_c_.write(block_c_tailer)
+  block_c_.close()
+
+  return block_h_BaseName
+
+#def parse_block_i_h_file(blockname, block_i_h_file):
+#  #ifile = open("%s_i.h" % blockname,'r')
+#  #text = ifile.read()
+#  #ifile.close()
+#
+#
+##  pattern_meas = re.compile(r"""
+##		  ^Time:(\d{2}:\d{2}:\d{2})   # Time: 12:34:56 at beginning of line
+##		  \n{2}                       # Two newlines
+##		  \D+                         # 1 or more non-digits
+##		  storeU=(\d+\.\d+)           # Decimal-number
+##		  \s
+##		  uIx=(\d+)                   # Fetch uIx-variable
+##		  \s
+##		  storeI=(-?\d+.\d+)          # Fetch storeI-variable
+##		  \s
+##		  iIx=(\d+)                   # Fetch iIx-variable
+##		  \s
+##		  avgCI=(-?\d+.\d+)           # Fetch avgCI-variable
+##		  """, re.VERBOSE | re.MULTILINE)
+#  #pattern_meas = re.compile('void\s+%s_i\s+\(.*\)\s;' % blockname, re.VERBOSE | re.MULTILINE)
+#  #pattern_meas = re.compile('void\s+%s_i' % blockname, re.VERBOSE | re.MULTILINE)
+#  #pattern_meas = re.compile(r'void\s+%s_i\s+\(.*(IN\s+.*).*(OUT\s+.*)\s+\)' % blockname, re.VERBOSE | re.MULTILINE | re.DOTALL)
+#  #pattern_meas = re.compile(r'void\s+%s_i\s+\(.*(IN\s+.*).*(OUT\s+.*)\s+\)' % blockname, re.VERBOSE | re.MULTILINE | re.DOTALL)
+#  #pattern_meas = re.compile(blockname, re.VERBOSE | re.MULTILINE)
+#
+#  #ifile = open("%s_i.h" % blockname,'r')
+#  ifile = open(block_i_h_file,'r')
+#  #pattern_meas = re.compile(r'(IN)\s+([a-z][A-Z]_\d)+\s+([a-z][A-Z]_\d)+', re.VERBOSE) 
+#  #pattern_meas = re.compile(r'(IN)\s+([a-z][A-Z]_\d)+\s*\*\s*([a-z][A-Z]_\d)+', re.VERBOSE) 
+#  pattern_meas = re.compile(r'(IN|OUT|CF)\s+([a-zA-Z_\d]+)\s*\*\s*([a-zA-Z_\d]+)', re.VERBOSE) 
+#
+#  inp_list = []
+#  out_list = []
+#  cf_list = []
+#
+#
+#  #for match in pattern_meas.finditer(text):
+#  #    #output = "%s,\t%s,\t\t%s,\t%s,\t\t%s,\t%s\n" % (match.group(1), match.group(2), match.group(3), match.group(4), match.group(5), match.group(6))
+#    for match in pattern_meas.finditer(line):
+#      iodir  = match.group(1)
+#      iotype = match.group(2)
+#      ioname = match.group(3)
+#      if (iodir == 'IN'):
+#	inp_list.append(iotype)
+#      elif (iodir == 'OUT'):
+#	out_list.append(iotype)
+#      elif (iodir == 'CF'):
+#	cf_list.append(iotype)
+#      else:
+#	logger.debug('Header file parse error')
+#	exit(1)
+#
+#  ifile.close()
+#
+#  return (inp_list, out_list, cf_list)
+
+
+def main():
+  
+  #block_inp_file = sys.argv[1]
+  #blockname = block_inp_file.split("/")[-1].split(".")[0]
+  block_i_h_file = sys.argv[1]
+  #block_h_file = "__block__.h"
+  #block_c_file = "__block__.c"
+  block_h_file = sys.argv[2]
+  block_c_file = sys.argv[3]
+
+  blockname = "".join(block_i_h_file.split("/")[-1].split(".")[0].split("_i")[0:-1])
+
+  #db = createDb()
+
+  logger.debug(blockname)
+
+  ios_list = parse_block_i_h_file(blockname, block_i_h_file)
+  #ios_list = parse_block_inp_file(block_inp_file)
+
+  code = gencode_block(blockname, ios_list)
+
+  block_allcode_h = code[0]
+  block_allcode_c = code[1]
+  logger.info('code_block_h_file:\n-----------------\n%s\n' % block_allcode_h)
+  logger.info('code_block_c_file:\n-----------------\n%s\n' % block_allcode_c)
+
+
+  block_h_BaseName = \
+  codegen_write_out_block(\
+  	blockname, \
+  	block_h_file, \
+	block_c_file, \
+	block_allcode_h, \
+	block_allcode_c \
+	)
+
+if __name__ == "__main__":
+  main()

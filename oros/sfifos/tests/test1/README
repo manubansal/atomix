@@ -1,0 +1,4 @@
+Simple buffer transfer test with atom A on core 1 and atom B on core 2. This test works with
+version 725 of orlib_sfifos. TC=>RD, TC=>WD was not implemented then.
+
+--MB, 07/29/12

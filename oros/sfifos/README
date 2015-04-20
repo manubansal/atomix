@@ -1,0 +1,73 @@
+orlib_sfifos code structure
+---------------------------
+
+As discussed in the OR-intercore-communication document, there are three main
+software modules: Synchronized FIFO (sfifo), Transfer block (T) and Transfer
+Driver (memcpy). These are further broken up into submodules as below.
+
+orlib_sfifos
+  |
+  |
+  |+- python/src/ (sfifo)
+  |     | Python generated C-code for fifo typing system. This module includes
+  |     | python scripts for users to add their named type definitions and 
+  |     | scripts to generate C-code for those types. The generated code is
+  |     | essentially typed fifo API wrappers that make use of generic, 
+  |     | parameterized actual implementations from fifoFactory (for construction)
+  |     | and fifoManager (for runtime).
+  |     |
+  |     +- bufferTypes.py
+  |     |    Top-level python script that contains type definitions added by the
+  |     |    user and also contains code to emit C code. Run this in its folder
+  |     |    to generate C source for fifo buffer types and constructors in 
+  |     |    python/inc and python/src respectively.
+  |     |    
+  |     +- fifoBufferTypes.h
+  |     |    Automatically generated source file containing type definitions 
+  |     |    as specified by the user in python scripts.
+  |     |    
+  |     +- fifoTypedConstructors.c
+  |          Automatically generated source file containing typed fifo 
+  |          constructors which are essentially wrappers of the fifoFactory     
+  |          implementation.     
+  |     
+  |
+  +- fifoFactory (sfifo)
+  |     | Type-independent fifo creation facility. This module allocates memory 
+  |     | for buffers to generic, parameterized fifos and is thus the underlying
+  |     | construction functionality for all fifo types.
+  |     | 
+  |     +- fifoFactory.h
+  |     +- fifoFactory.c
+  |
+  +- fifoManager (sfifo)
+  |     | Main fifo functionality including the state machine for per buffer
+  |     | state management. Multiple implementations will exist for the same
+  |     | fifoManager api, for example, there is a single fifoManager.h but 
+  |     | multiple .c files like fifoManager_f0.c, fifoManager_f1.c, 
+  |     | fifoManager_f2.c for different kinds of under-the-hood implementations.
+  |     | 
+  |     | 
+  |     +- fifoManager.h
+  |     +- fifoManager_f0.c
+  |     +- fifoManager_f1.c
+  |     +- fifoManager_f2.c
+  |    
+  |+- lib/ipc/ (memcpy)
+  |     | Libraries for inter-processor communication. This includes modules
+  |     | for shared memory communication (synchronous) and DMA communication
+  |     | (asynchronous) transfers.
+  |
+  |+- transfer_block (T)
+  |     | orlib transfer block module. This is patterned along blocks in 
+  |     | orsys/orlib/orlib_blocks source tree.
+  |     |
+  |     +- orlib_sfifos_transfer_c66.h
+  |     +- orlib_sfifos_transfer_c66.c
+  |    
+  |+- tests
+  |     | Unit tests for different modules in this source tree. Each test module
+  |     | has a main file and builds its own binary.
+  |     | 
+__/____/
+

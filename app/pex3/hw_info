@@ -1,0 +1,7 @@
+# Note: Please finish all HW definitions before listing communication costs between two kinds of hardware
+# In short, all HW should precede all COMM
+HW CPU 4
+HW VCP 2
+COMM CPU CPU 500
+COMM CPU VCP 300
+COMM VCP VCP 250

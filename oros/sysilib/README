@@ -1,0 +1,5 @@
+OROS system core functionality implementation-only block library includes:
+
+BlockKK: The kernel block that will run on each core; it issues the next
+state based on previous state's decision.
+BlockCP: The four-way copy block.

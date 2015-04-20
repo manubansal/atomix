@@ -1,0 +1,86 @@
+#!/bin/bash
+#echo "$0"
+
+OPT_path_style="-m"
+#if ! options=$(getopt -a -o o:cgD:i:I:O: -l include_path:,printf_support:,qversion,output_file:,CMPLR_FLAGS_FILE:,LINKER_FLAGS_FILE:,LINKER_SCRIPT_FILE: -- "$@")  #quoted, #-long allowed too
+if ! options=$(getopt -a -o mw -- "$@")  #quoted, #-long allowed too
+then
+    # something went wrong, getopt will put out an error message for us
+    exit 1
+fi
+
+eval set -- $options
+
+while [ $# -gt 0 ]
+do
+    case "$1" in
+
+    #-v|-V|--version) OPT_v=1; OTHERFLAGS="$OTHERFLAGS -qversion";
+    -w) OPT_path_style="-w";
+    ;;
+
+    -m) OPT_path_style="-m";
+    ;;
+
+    (--) shift; break;;
+    (-*) echolog "$0: error - unrecognized option $1" 1>&2; exit 1;;
+    (*) break;;
+    esac
+    shift
+done
+
+REM_ARG="$@"
+
+
+if [ "`uname -s`" = "Linux" ]
+then
+#echo "+++++++++++++++++++++++++"
+#uname -s
+#echo "+++++++++++++++++++++++++"
+#echo "################### case linux"
+CYGPATH_REAL="`which realpath`"
+PARAMS=`echo $@ | sed 's/-[awm]//g'`
+path_unquoted="`$CYGPATH_REAL $PARAMS`"
+path_unquoted_mixed=`$CYGPATH_REAL "$path_unquoted"`
+else
+#echo "################### case no-linux"
+CYGPATH_REAL="`which cygpath`"
+
+#path_unquoted="`$CYGPATH_REAL -a $@`"
+#path_unquoted_mixed=`$CYGPATH_REAL -a -m "$path_unquoted"`
+
+path_unquoted="`$CYGPATH_REAL -a $@`"
+path_unquoted_mixed=`$CYGPATH_REAL -a $OPT_path_style "$path_unquoted"`
+
+fi
+#path_quoted=\'`$CYGPATH_REAL -a $@`\'
+####path_quoted=\"`$CYGPATH_REAL -a $@`\"
+#-path_unquoted="`$CYGPATH_REAL $PARAMS`"
+#path="`$CYGPATH_REAL -a $@`"
+#path_quoted=\""$path"\"
+####echo "$path_quoted"
+#path_unquoted_mixed="`$CYGPATH_REAL -a -m $path_quoted`"
+#path_unquoted_mixed="`$CYGPATH_REAL -a -m $path_unquoted`"
+#-path_unquoted_mixed=`$CYGPATH_REAL "$path_unquoted"`
+#echo "$path_unquoted_mixed"
+#path_escaped=`echo "$path_unquoted_mixed" | sed 's/ /\\ /g'`
+#path_escaped=`echo "$path_unquoted_mixed" | sed 's/ /\\\ /g'`
+path_escaped=`echo "$path_unquoted_mixed" | sed 's/ /@@/g'`
+echo "$path_escaped"
+
+
+
+
+#@@ -1,17 +1,26 @@
+##!/bin/bash
+##echo "$0"
+#CYGPATH_REAL="`which cygpath`"
+#path_unquoted="`$CYGPATH_REAL -a $@`"
+#path_unquoted_mixed=`$CYGPATH_REAL -a -m "$path_unquoted"`
+#path_escaped=`echo "$path_unquoted_mixed" | sed 's/ /@@/g'`
+#echo $path_escaped
+#
+
+
+
+

@@ -1,0 +1,22 @@
+
+# Atomix project, fifos.or, TODO: insert summary here
+# Copyright (c) 2015 Stanford University
+# Released under the Apache License v2.0. See the LICENSE file for details.
+# Author(s): Manu Bansal
+
+#DEPRECATED: <command==fifo>:<instancename>:<numbufs>:<bufsize_bytes>:<src/dst/sin>:<coreid>
+#<command==fifo>:<instancename>:<numbufs>:<src/dst/sin>:<coreid>
+#<command==fill>:<instanename>:<initial fill data as Uint8's>
+#If initial fill data is provided, each buffer in the queue starts in the filled state, otherwise 
+#each buffer starts in the empty state.
+#DEPRECATED: <command==link>: <instancename>: <instancename>: <pull|push>
+#DEPRECATED: <command==link>: <instancename>: <instancename>: <coreid of the transfer block>
+#fill: ff3: {0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,3,0,0,0,0}
+#
+fifo: ff_kk0:10:sin:0
+fifo: ff_kk1:10:sin:1
+fifo: ff_kk2:10:sin:2
+fifo: ff_kk3:10:sin:3
+#
+fifo: ff_x: 100: sin: 0
+fifo: ff_y: 100: dst: 1

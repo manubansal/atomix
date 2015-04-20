@@ -1,0 +1,8 @@
+Example block library based on the implementation-only structure.
+
+BlockX  : A data producer block with only output but no input
+BlockY  : A data consumer block with only input but no output 
+BlockA  : A data transformer block with input and output both
+BlockAS : A stateful data transformer block with input and output both
+BlockASI: A state initializer block to assist BlockAS
+BlockB  : A data transformer block with functionality inverse of BlockA

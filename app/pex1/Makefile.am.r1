@@ -1,0 +1,13 @@
+ILIB_INCLUDE_PATH  =
+ILIB_INCLUDE_PATH += -I$(ORSYS_ROOT)/exilib
+ILIB_INCLUDE_PATH += -I$(ORSYS_ROOT)/oros/sfifos/ilib
+ILIB_INCLUDE_PATH += -I$(ORSYS_ROOT)/oros/sysilib
+ILIB_INCLUDE_PATH += -I${ORILIB_INC_DIR}
+
+USING_BLOCKS =
+USING_BLOCKS += BlockX BlockY BlockDX BlockJ BlockA BlockB BlockAS
+
+
+r1: 
+	PYTHONPATH=${PYTHONPATH}:$(abs_builddir) orpy.py ${ILIB_INCLUDE_PATH} Pex1 $(srcdir) ${USING_BLOCKS}
+

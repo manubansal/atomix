@@ -1,0 +1,41 @@
+
+# Atomix project, states.or, TODO: insert summary here
+# Copyright (c) 2015 Stanford University
+# Released under the Apache License v2.0. See the LICENSE file for details.
+# Author(s): Manu Bansal
+
+#<command==action>:<axnName>:<atomseq>
+#<command==state>:<stateName>:<stateNum>:<coreNum>:<action|noaxn>:<atomseq>
+#DEPRECATED <command==decway>....
+#where atomseq = (atomname;)+ (note that a semicolon must follow each
+#atom in the sequence, even the last one.)
+#
+action: axn_1_1: x_1_1  ;
+action: axn_2_2: x_2_2; a_2_2; y_2_2;
+action: axn_3_3: x_3_3; b_3_3; y_3_3;
+#
+state : sta_start
+state : sta_trinc
+state : sta_trdec
+#
+statep: sta_start: 0: noaxn  : 			tr_1_0;
+statep: sta_start: 1: axn_1_1: dx_1_1; cp_1_1; 	tr_1_1;
+statep: sta_start: 2: noaxn  : 			tr_1_2;
+statep: sta_start: 3: noaxn  : 			tr_1_3;
+#
+statep: sta_trinc: 0: noaxn  : 			tr_2_0;
+statep: sta_trinc: 1: noaxn  : 			tr_2_1;
+statep: sta_trinc: 2: axn_2_2: j_2_2; cp_2_2;	tr_2_2;
+statep: sta_trinc: 3: noaxn  : 			tr_2_3;
+#
+statep: sta_trdec: 0: noaxn  : 			tr_3_0;
+statep: sta_trdec: 1: noaxn  : 			tr_3_1;
+statep: sta_trdec: 2: noaxn  : 			tr_3_2;
+statep: sta_trdec: 3: axn_3_3: j_3_3; cp_3_3;	tr_3_3;
+#
+#decway: dx_1_1: 0: sta_start
+#decway: dx_1_1: 1: sta_trinc
+#decway: dx_1_1: 2: sta_trdec
+#
+#<command=statei>:<initState>:<iterCount>
+statei: sta_start: 1

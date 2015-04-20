@@ -1,0 +1,28 @@
+The IPC module for interprocessor communication provides data transfer capability using 
+either CPU copy (memcpy) or DMA copy (using the EDMA module). It uses the edma driver for
+implementing DMA copy.
+
+The IPC module provides "link abstraction" to extend a channel, where the links and channels
+are defined by:
+
+
+/* A "channel" is defined by the tuple (EDMA3CC_INST_NUM, chNum, chTCC, regionNum, paramNum),
+ * that is, the EDMA controller module, channel number, the channel
+ * transfer completion code assigned to it, the shadow region number
+ * and the parameter RAM number assigned to it. These fields are also
+ * maintained by the TI CSL structure for the channel object but we
+ * maintain it ourselves to keep the driver API independent of the
+ * CSL API. (This decision can be revisited).
+ */
+
+/* A "link" is an extension of the channel identification by attaching
+ * an owner core to each channel. The owner core is the only core that
+ * can use the channel (write-access), that is, set up the PaRAM, start
+ * and transfer, query transfer completion and clear transfer completion
+ * code. A non-owner core can only query the transfer-completion status
+ * (read-only).
+ */
+
+Each buffer of a multi-core FIFO will have an associated link over which it can be copied to
+its mirror buffer. This association is supposed to be static. Not every link has to use a DMA
+channel resource.
