@@ -129,7 +129,6 @@ AC_CONFIG_FILES([
  unittests/Makefile
  oros/tests/test2i/Makefile
  app/pex1/Makefile
- app/helloworld/Makefile
 ])
 #app/wifirx54m/Makefile
 #app/wifirx54mc/Makefile
