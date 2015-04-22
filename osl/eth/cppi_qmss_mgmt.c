@@ -112,7 +112,7 @@ volatile uint32_t			gTxCounter = 0, gRxCounter = 0;
 uint8_t               gRxBuffs[NUM_RX_DESC][1518];
 
 /** ============================================================================
- *   @n@b Convert_CoreLocal2GlobalAddr
+ *   @n@b OSL_Convert_CoreLocal2GlobalAddr
  *
  *   @b Description
  *   @n This API converts a core local L2 address to a global L2 address.
@@ -124,7 +124,7 @@ uint8_t               gRxBuffs[NUM_RX_DESC][1518];
  *   @n >0              Global L2 address
  * =============================================================================
  */
-uint32_t Convert_CoreLocal2GlobalAddr (uint32_t  addr)
+uint32_t OSL_Convert_CoreLocal2GlobalAddr (uint32_t  addr)
 {
 	uint32_t coreNum;
 
@@ -221,7 +221,7 @@ int32_t Init_Qmss (void)
 
     /* Initialize and setup CPSW Host Descriptors required for example */
     memset (gHostDesc, 0, SIZE_HOST_DESC * NUM_HOST_DESC);
-    memCfg.descBase             =   (uint32_t *) Convert_CoreLocal2GlobalAddr ((uint32_t) gHostDesc);
+    memCfg.descBase             =   (uint32_t *) OSL_Convert_CoreLocal2GlobalAddr ((uint32_t) gHostDesc);
     memCfg.descSize             =   SIZE_HOST_DESC;
     memCfg.descNum              =   NUM_HOST_DESC;
     memCfg.manageDescFlag       =   Qmss_ManageDesc_MANAGE_DESCRIPTOR;
@@ -518,7 +518,7 @@ int32_t Setup_Rx (void)
     accCfg.channel             =   accChannelNum;
     accCfg.command             =   Qmss_AccCmd_ENABLE_CHANNEL;
     accCfg.queueEnMask         =   0;
-    accCfg.listAddress         =   Convert_CoreLocal2GlobalAddr((uint32_t) gHiPriAccumList);
+    accCfg.listAddress         =   OSL_Convert_CoreLocal2GlobalAddr((uint32_t) gHiPriAccumList);
     accCfg.queMgrIndex         =   gRxQHnd;
     accCfg.maxPageEntries      =   (intThreshold + 1); /* Add an extra entry for holding the entry count */
     accCfg.timerLoadCount      =   0;
@@ -579,10 +579,10 @@ int32_t Setup_Rx (void)
 				// END AARON
         
         /* Populate the Rx free descriptor with the buffer we just allocated. */
-        Cppi_setData (Cppi_DescType_HOST, pCppiDesc, (uint8_t *)Convert_CoreLocal2GlobalAddr((uint32_t)pDataBuffer), 1518);
+        Cppi_setData (Cppi_DescType_HOST, pCppiDesc, (uint8_t *)OSL_Convert_CoreLocal2GlobalAddr((uint32_t)pDataBuffer), 1518);
 
         /* Save original buffer information */
-        Cppi_setOriginalBufInfo (Cppi_DescType_HOST, pCppiDesc, (uint8_t *)Convert_CoreLocal2GlobalAddr((uint32_t)pDataBuffer), 1518);
+        Cppi_setOriginalBufInfo (Cppi_DescType_HOST, pCppiDesc, (uint8_t *)OSL_Convert_CoreLocal2GlobalAddr((uint32_t)pDataBuffer), 1518);
 
         /* Setup the Completion queue:
          *

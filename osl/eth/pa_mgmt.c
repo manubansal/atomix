@@ -249,10 +249,10 @@ int32_t Add_MACAddress (uint8_t* mac)
     pHostDesc = (Ptr) ((uint32_t) pHostDesc & 0xFFFFFFF0);
     
     /* Populate the Rx free descriptor with the fixed command buffer. */
-    Cppi_setData (Cppi_DescType_HOST, (Cppi_Desc *)pHostDesc, (uint8_t *)Convert_CoreLocal2GlobalAddr((uint32_t)gPaCmdBuf1), sizeof(gPaCmdBuf1));
+    Cppi_setData (Cppi_DescType_HOST, (Cppi_Desc *)pHostDesc, (uint8_t *)OSL_Convert_CoreLocal2GlobalAddr((uint32_t)gPaCmdBuf1), sizeof(gPaCmdBuf1));
 
     /* Save original buffer information */
-    Cppi_setOriginalBufInfo (Cppi_DescType_HOST, (Cppi_Desc *)pHostDesc, (uint8_t *)Convert_CoreLocal2GlobalAddr((uint32_t)gPaCmdBuf1), sizeof(gPaCmdBuf1));    
+    Cppi_setOriginalBufInfo (Cppi_DescType_HOST, (Cppi_Desc *)pHostDesc, (uint8_t *)OSL_Convert_CoreLocal2GlobalAddr((uint32_t)gPaCmdBuf1), sizeof(gPaCmdBuf1));    
 
     cmdSize                 =   pHostDesc->buffLen;
     cmdReplyInfo.replyId    =   0x11111111;  /* unique for each add mac command */
@@ -437,10 +437,10 @@ int32_t Add_IPAddress (void)
     pHostDesc = (Ptr) ((uint32_t) pHostDesc & 0xFFFFFFF0);
     
     /* Populate the Rx free descriptor with the buffer we just allocated. */
-    Cppi_setData (Cppi_DescType_HOST, (Cppi_Desc *)pHostDesc, (uint8_t *)Convert_CoreLocal2GlobalAddr((uint32_t)gPaCmdBuf1), sizeof(gPaCmdBuf1));
+    Cppi_setData (Cppi_DescType_HOST, (Cppi_Desc *)pHostDesc, (uint8_t *)OSL_Convert_CoreLocal2GlobalAddr((uint32_t)gPaCmdBuf1), sizeof(gPaCmdBuf1));
 
     /* Save original buffer information */
-    Cppi_setOriginalBufInfo (Cppi_DescType_HOST, (Cppi_Desc *)pHostDesc, (uint8_t *)Convert_CoreLocal2GlobalAddr((uint32_t)gPaCmdBuf1), sizeof(gPaCmdBuf1));    
+    Cppi_setOriginalBufInfo (Cppi_DescType_HOST, (Cppi_Desc *)pHostDesc, (uint8_t *)OSL_Convert_CoreLocal2GlobalAddr((uint32_t)gPaCmdBuf1), sizeof(gPaCmdBuf1));    
 
     cmdSize                 =   pHostDesc->buffLen;
     cmdReplyInfo.replyId    =   0x11111111;  /* unique for each add mac command */
@@ -486,7 +486,7 @@ int32_t Add_IPAddress (void)
        
     /* Send the command to the PA and wait for the return */
     Qmss_queuePush (gPaTxQHnd[cmdDest - pa_CMD_TX_DEST_0], 
-                    (uint32_t *)Convert_CoreLocal2GlobalAddr((uint32_t)pHostDesc), 
+                    (uint32_t *)OSL_Convert_CoreLocal2GlobalAddr((uint32_t)pHostDesc), 
                     pHostDesc->buffLen, 
                     SIZE_HOST_DESC, 
                     Qmss_Location_TAIL
@@ -606,10 +606,10 @@ int32_t Add_Port (void)
     pHostDesc = (Ptr) ((uint32_t) pHostDesc & 0xFFFFFFF0);
     
     /* Populate the Rx free descriptor with the buffer we just allocated. */
-    Cppi_setData (Cppi_DescType_HOST, (Cppi_Desc *)pHostDesc, (uint8_t *)Convert_CoreLocal2GlobalAddr((uint32_t)gPaCmdBuf2), sizeof(gPaCmdBuf2));
+    Cppi_setData (Cppi_DescType_HOST, (Cppi_Desc *)pHostDesc, (uint8_t *)OSL_Convert_CoreLocal2GlobalAddr((uint32_t)gPaCmdBuf2), sizeof(gPaCmdBuf2));
 
     /* Save original buffer information */
-    Cppi_setOriginalBufInfo (Cppi_DescType_HOST, (Cppi_Desc *)pHostDesc, (uint8_t *)Convert_CoreLocal2GlobalAddr((uint32_t)gPaCmdBuf2), sizeof(gPaCmdBuf2));    
+    Cppi_setOriginalBufInfo (Cppi_DescType_HOST, (Cppi_Desc *)pHostDesc, (uint8_t *)OSL_Convert_CoreLocal2GlobalAddr((uint32_t)gPaCmdBuf2), sizeof(gPaCmdBuf2));    
 
     cmdSize                 =   pHostDesc->buffLen;
     cmdReplyInfo.replyId    =   0x11111111;  /* unique for each add mac command */
@@ -660,7 +660,7 @@ int32_t Add_Port (void)
        
     /* Send the command to the PA and wait for the return */
     Qmss_queuePush (gPaTxQHnd[cmdDest - pa_CMD_TX_DEST_0], 
-                    (uint32_t *)Convert_CoreLocal2GlobalAddr((uint32_t)pHostDesc), 
+                    (uint32_t *)OSL_Convert_CoreLocal2GlobalAddr((uint32_t)pHostDesc), 
                     pHostDesc->buffLen, 
                     SIZE_HOST_DESC, 
                     Qmss_Location_TAIL

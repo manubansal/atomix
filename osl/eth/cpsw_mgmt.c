@@ -79,7 +79,7 @@
  *   @n None
  * =============================================================================
  */
-int32_t Init_SGMII (uint32_t macPortNum)
+int32_t OSL_Init_SGMII (uint32_t macPortNum)
 {  
     CSL_SGMII_ADVABILITY    sgmiiCfg;
 	CSL_SGMII_STATUS        sgmiiStatus;
@@ -368,7 +368,7 @@ int32_t Init_Cpsw (uint8_t* host_mac, uint8_t* amc_mac, uint8_t* wire_mac)
      */
     for (macPortNum = 0; macPortNum < NUM_MAC_PORTS; macPortNum++)
     {
-    	if (Init_SGMII (macPortNum))
+    	if (OSL_Init_SGMII (macPortNum))
 		  return -1;
         Init_MAC (macPortNum, &macSrcAddress[macPortNum][0], mtu);
     }

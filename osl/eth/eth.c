@@ -307,7 +307,7 @@ int32_t eth_send(uint8_t* payload, uint32_t payload_len) //{{{
 
 	Cppi_setData(Cppi_DescType_HOST, 
 							(Cppi_Desc *) pCppiDesc,
-							(uint8_t*)Convert_CoreLocal2GlobalAddr((uint32_t)payload),
+							(uint8_t*)OSL_Convert_CoreLocal2GlobalAddr((uint32_t)payload),
 							payload_len);
 
 	Cppi_setPacketLen (Cppi_DescType_HOST, (Cppi_Desc *)pCppiDesc, payload_len);

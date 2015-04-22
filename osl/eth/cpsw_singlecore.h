@@ -105,7 +105,7 @@ int32_t Init_PASS (void);
 int32_t Setup_Tx (void);
 int32_t Setup_Rx (void);
 int32_t Setup_PASS (uint8_t* mac);
-uint32_t Convert_CoreLocal2GlobalAddr (uint32_t  addr);
+uint32_t OSL_Convert_CoreLocal2GlobalAddr (uint32_t  addr);
 int32_t SendPacket (void);
 void CycleDelay (int32_t count);
 int32_t VerifyPacket (Cppi_Desc* pCppiDesc);
