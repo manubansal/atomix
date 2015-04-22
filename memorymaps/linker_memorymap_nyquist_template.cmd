@@ -47,7 +47,7 @@
 
 -c
 -heap  0xE0000
--stack 0x14000		
+-stack 0x8000		
 /*-stack 0x10000*/		/* works */ /* 64KB */
 /*-stack 0x8000	*/		/* works */ /* 32KB */
 /*-stack 0x4000	*/		/* works */ /* 16KB */
