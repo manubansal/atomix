@@ -201,7 +201,9 @@ int32_t eth_init(uint8_t* host_mac, uint8_t* amc_mac, uint8_t* wire_mac) //{{{
 	}
 	else
 	{
-		printf ("QMSS successfully initialized \n");            
+//ADITYA : commenting out printfs
+//		printf ("QMSS successfully initialized \n");            
+//End of commenting
 	}
 
 	/* Initialize CPPI */
@@ -212,7 +214,9 @@ int32_t eth_init(uint8_t* host_mac, uint8_t* amc_mac, uint8_t* wire_mac) //{{{
 	}
 	else
 	{
-		printf ("CPPI successfully initialized \n");            
+//ADITYA : commenting out printfs
+//		printf ("CPPI successfully initialized \n");            
+//End of commenting
 	}
 
 	/* Init PA LLD */
@@ -223,7 +227,9 @@ int32_t eth_init(uint8_t* host_mac, uint8_t* amc_mac, uint8_t* wire_mac) //{{{
 	}
 	else
 	{
-		printf ("PASS successfully initialized \n");            
+//ADITYA : commenting out printfs
+//		printf ("PASS successfully initialized \n");            
+//End of commenting
 	}
 
 	/* Initialize the CPSW switch */
@@ -234,7 +240,9 @@ int32_t eth_init(uint8_t* host_mac, uint8_t* amc_mac, uint8_t* wire_mac) //{{{
 	}
 	else
 	{
-		printf ("Ethernet subsystem successfully initialized \n");            
+//ADITYA : commenting out printfs
+//		printf ("Ethernet subsystem successfully initialized \n");            
+//End of commenting
 	}
     
 	/* Setup Tx */
@@ -245,7 +253,9 @@ int32_t eth_init(uint8_t* host_mac, uint8_t* amc_mac, uint8_t* wire_mac) //{{{
 	}
 	else
 	{
-		printf ("Tx setup successfully done \n");            
+//ADITYA : commenting out printfs
+//		printf ("Tx setup successfully done \n");            
+//End of commenting
 	}
 
 	/* Setup Rx */
@@ -256,7 +266,9 @@ int32_t eth_init(uint8_t* host_mac, uint8_t* amc_mac, uint8_t* wire_mac) //{{{
 	}
 	else
 	{
-		printf ("Rx setup successfully done \n");            
+//ADITYA : commenting out printfs
+//		printf ("Rx setup successfully done \n");            
+//End of commenting
 	}
 
 	/* Setup PA */
@@ -267,7 +279,9 @@ int32_t eth_init(uint8_t* host_mac, uint8_t* amc_mac, uint8_t* wire_mac) //{{{
 	}
 	else
 	{
-		printf ("PASS setup successfully done \n");            
+//ADITYA : commenting out printfs
+//		printf ("PASS setup successfully done \n");            
+//End of commenting
 	}
 
 	/* Setup PA for broadcast MAC address */
@@ -278,7 +292,9 @@ int32_t eth_init(uint8_t* host_mac, uint8_t* amc_mac, uint8_t* wire_mac) //{{{
 	}
 	else
 	{
-		printf ("PASS setup successfully done \n");            
+//ADITYA : commenting out printfs
+//		printf ("PASS setup successfully done \n"); 
+//End of commenting           
 	}
 
 	return 0;
