@@ -1309,7 +1309,13 @@ def parse_atoms_inp_file(bs, dbo, ATOM_DB, WIRE_DB, CONF_DB, atoms_inp_file, ato
 	  optimized_atom = 1
 	atom_row.append(optimized_atom)
 
-	dbo.db_insert_atom_row(atom_row)
+	try:
+	  dbo.db_insert_atom_row(atom_row)
+	except:
+	  print_line()
+	  logger.error("atom_row: %s" % atom_row)
+	  print_line()
+	  raise
 
 	atom_log_row = row[1:]
 	inpstr = ','.join(["%s:%s" % tup for tup in inp_list2])
