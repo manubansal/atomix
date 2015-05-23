@@ -502,6 +502,7 @@ void eth_printUDPPayloadChars(NET_ip_packet * ip_pkt, Uint32 nChars) {
   unsigned char * udp_payload = ip_pkt->data + sizeof(NET_udphdr);
   int i; 
   for (i = 0; i < nChars; i++) {
-    printf("%c", udp_payload[i]);
+    //printf("%c", udp_payload[i]);
+    printf("%02x ", udp_payload[i]);
   }
 }
