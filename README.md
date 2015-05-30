@@ -69,7 +69,7 @@ export CSL_ROOT="$EXTLIBS_ROOT/pdk_C6670_1_1_2_5/packages"             #for 6670
 alias cygpath="_cygpath"
 
 export DSPLIB_ROOT="$EXTLIBS_ROOT/dsplib_c66x_3_2_0_1"
-export IQMATH_ROOT="$EXTLIBS_ROOT/iqmath"
+export IQMATH_ROOT="$EXTLIBS_ROOT/c64xplus-iqmath_2_01_04_00"
 export UNITY_ROOT="$EXTLIBS_ROOT/unity"
 
 export BUILD_UTILS_ROOT=$ATOMIX_ROOT_LINUX_STYLE/r2cmplr:$ATOMIX_ROOT_LINUX_STYLE/r1cmplr
