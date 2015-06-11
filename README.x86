@@ -1,0 +1,11 @@
+########################################
+#### for atomix
+########################################
+export ATOMIX_ROOT_LINUX_STYLE=/Users/manub/workspace/atomix
+export ATOMIX_ROOT="/Users/manub/workspace/atomix"
+alias cygpath="_cygpath"
+
+export BUILD_UTILS_ROOT=$ATOMIX_ROOT_LINUX_STYLE/r2cmplr:$ATOMIX_ROOT_LINUX_STYLE/r1cmplr
+export PATH=$BUILD_UTILS_ROOT:$PATH
+export PATH=$PATH:$ATOMIX_ROOT_LINUX_STYLE/tracescripts
+########################################

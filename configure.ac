@@ -90,6 +90,7 @@ AS_CASE([$host],
        [nyquist], [HOST=nyquist],
        [evm6670], [HOST=evm6670],
        [6638k2k], [HOST=6638k2k],
+       [x86], [HOST=x86],
        [HOST=nyquist],
 #       AC_MSG_ERROR([Unknown host platform --host=$host])
      )
