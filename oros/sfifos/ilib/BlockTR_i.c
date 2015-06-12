@@ -8,7 +8,10 @@ Author(s): Manu Bansal
 #include <oros/sfifos/fifoFactory.h>
 #include <oros/sfifos/fifoManager.h>
 #include "BlockTR_i.h"
+
+#ifdef _TMS320C6X
 #include <c6x.h>
+#endif
 
 void BlockTR_i(
 	IN  void *bufInp,

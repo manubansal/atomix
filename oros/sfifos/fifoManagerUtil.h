@@ -8,7 +8,11 @@ Author(s): Manu Bansal
 #define FIFOMANAGERUTIL_H_
 
 #include "fifoManager.h"
+
+#ifdef _TMS320C6X
 #include <c6x.h>
+#endif
+
 #include <osl/inc/timing.h>
 
 

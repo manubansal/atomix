@@ -9,8 +9,11 @@ Author(s): Manu Bansal
 #include <osl/inc/timing.h>
 #include "fifoFactory.h"
 #include "fifoManager.h"
-#include <c6x.h>
 #include <ipc/ipc_cpy.h>
+
+#ifdef _TMS320C6X
+#include <c6x.h>
+#endif
 
 
 //////DEBUG(

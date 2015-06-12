@@ -6,11 +6,12 @@ Author(s): Manu Bansal
 */
 
 #include "fifoManager.h"
-#include <c6x.h>
 #include <osl/inc/timing.h>
-
-
 #include <oros/sysilib/SYS_TimeStamp.h>
+
+#ifdef _TMS320C6X
+#include <c6x.h>
+#endif
 
 
 //////////void FIFO_rereadDone(FIFO_Handle f, FIFO_BufferHandle b) {

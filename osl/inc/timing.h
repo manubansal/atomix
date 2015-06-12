@@ -5,8 +5,11 @@ Released under the Apache License v2.0. See the LICENSE file for details.
 Author(s): Manu Bansal
 */
 
-#include <ti/csl/csl_tsc.h>
 #include <stdio.h>
+
+#ifdef _TMS320C6X
+
+#include <ti/csl/csl_tsc.h>
 
 
 #ifdef ENABLE_TIMING
@@ -24,3 +27,4 @@ printf(" Cycles: %lld \n",post-pre); \
 func
 #endif
 
+#endif
