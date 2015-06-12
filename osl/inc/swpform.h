@@ -14,9 +14,17 @@ Author(s): Manu Bansal
 #include "amem4cpy_inl.h"
 
 
+#ifdef _TMS320C6X
 #include <ti/csl/tistdtypes.h>
 //#include "CI_types.h"
+#endif
+
+#ifdef _X86
+#include <osl/inc/x86stdtypes.h>
+#endif
+
 #include "or_types.h"
+
 #include <oros/sysilib/SYS_TimeStamp.h>
 #include <osl/LOG_logger.h>
 
@@ -175,6 +183,7 @@ static inline Uint32 IS_PTR_ALIGNED(Uint32 *ptr, Uint32 alignmentFactor) {
   return ((Uint32)ptr % alignmentFactor == 0);
 }
 
+#ifndef _X86
 //returns ceil(a/b)
 static inline Uint32 ceil(Uint32 a, Uint32 b) {
 	Uint32 q, r;
@@ -190,6 +199,7 @@ static inline Uint32 floor(Uint32 a, Uint32 b) {
 	q = a/b;
 	return q;
 }
+#endif
 
 #define MAX(a, b) ((a) < (b) ? (b) : (a))
 #define MIN(a,b) ((a) < (b) ? (a) : (b))

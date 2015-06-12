@@ -16,7 +16,15 @@ extern "C" {
 /* *****************************************************************************
  *			Public Includes
  * ************************************************************************** */
+#ifdef _TMS320C6X
 #include <ti/csl/tistdtypes.h>
+//#include "CI_types.h"
+#endif
+
+#ifdef _X86
+#include <osl/inc/x86stdtypes.h>
+#endif
+
 #include <stdint.h>
 /* *****************************************************************************
  *			Type Definitions

@@ -1,5 +1,10 @@
-AR=ar6x
-ARFLAGS="r"
+#AR=ar6x
+ARFLAGS.ti="r"
+ARFLAGS.x86="r"
+ARFLAGS=${ARFLAGS.${HOST}}
+
+CFLAGS.ti=
+LDFLAGS.ti=
 
 CFLAGS+=\
   -I"${CG_TOOL_ROOT_WIN}/include" \
@@ -11,10 +16,15 @@ CFLAGS+=\
   -I"${IQMATH_ROOT}/include" \
   -I"${UNITY_ROOT}/src"		
 
-CFLAGS+=--CMPLR_FLAGS_FILE "`_cygpath -m $(ATOMIX_ROOT_VAL)/cmplrflags.cmd`"
+CFLAGS+=-g 
+CFLAGS.ti+=--relaxed_ansi 
+CFLAGS.ti+=--diag_warning=225
+CFLAGS.ti+=--gen_func_subsections=on 
+CFLAGS.ti+=--big_endian 
+CFLAGS.ti+=--abi=eabi
 
 CFLAGS+=-DALLCORE 
-CFLAGS+=-D_TMS320C6X
+CFLAGS.ti+=-D_TMS320C6X
 #CFLAGS+=--printf_support=full
 #CFLAGS+=-DENABLE_LIB_RUN_TIME_MEASUREMENT	#for debug mode runtime measurement
 
@@ -50,16 +60,16 @@ CFLAGS.INPTRACEMODE.lm=-DLARGE_TRACE_MANLOADED -DLARGE_TRACE
 CFLAGS.INPTRACEMODE.s=
 CFLAGS+=${CFLAGS.INPTRACEMODE.${INPTRACEMODEVAL}}
 
-CFLAGS+=--silicon_version=6600
-LDFLAGS+=--silicon_version=6600
+CFLAGS.ti+=--silicon_version=6600
+LDFLAGS.ti+=--silicon_version=6600
 
 #Note: for -mv6600 (--silicon_version=6600), EABI (ELF ABI) 
 #is the default, not the COFF ABI.
 
 #CFLAGS+=--abi=eabi
 #LDFLAGS+=--abi=eabi
-CFLAGS+=--no_const_clink
-LDFLAGS+=--no_const_clink
+CFLAGS.ti+=--no_const_clink
+LDFLAGS.ti+=--no_const_clink
 
 #CFLAGS+=--abi=coffabi
 #LDFLAGS+=--abi=coffabi
@@ -139,7 +149,7 @@ CFLAGS+=-DSYS_LOG_TO_FILE  -DSYS_LOG_FILE=\\\"${SYSLOG_DIR}/syslog.txt\\\"
 #CFLAGS+=-DLOG_CONSOLE   -DLOG_STDOUT_FILE_PREFIX=\\\"/tmp/stdout\\\"
 
 
-CFLAGS+=--mem_model:data=far
+CFLAGS.ti+=--mem_model:data=far
 
 
 MEMORYMAP_FILE.evm6474=linker_memorymap_evm6474.cmd
@@ -149,8 +159,17 @@ MEMORYMAP_FILE.6638k2k=linker_memorymap_nyquist.cmd
 MEMORYMAP_FILE.=linker_memorymap_nyquist.cmd
 MEMORYMAP_FILE=${MEMORYMAP_FILE.${HOST}}
 
-CFLAGS.evm6474=
-CFLAGS.nyquist=
-CFLAGS.evm6670=
-CFLAGS.6638k2k=-DDEVICE_K2K
+CFLAGS.evm6474=${CFLAGS.ti}
+CFLAGS.nyquist=${CFLAGS.ti}
+CFLAGS.evm6670=${CFLAGS.ti}
+CFLAGS.6638k2k=${CFLAGS.ti} -DDEVICE_K2K
+
+LDFLAGS.evm6474=${LDFLAGS.ti}
+LDFLAGS.nyquist=${LDFLAGS.ti}
+LDFLAGS.evm6670=${LDFLAGS.ti}
+LDFLAGS.6638k2k=${LDFLAGS.ti}
+
+CFLAGS.x86=--std=c99 -D_X86
+
 CFLAGS+=${CFLAGS.${HOST}}
+LDFLAGS+=${LDFLAGS.${HOST}}

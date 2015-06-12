@@ -5,8 +5,11 @@ Released under the Apache License v2.0. See the LICENSE file for details.
 Author(s): Manu Bansal
 */
 
-#include <ti/csl/csl_cacheAux.h>
 #include <osl/inc/swpform.h>
+
+#ifdef _TMS320C6X
+
+#include <ti/csl/csl_cacheAux.h>
 
 //source: http://e2e.ti.com/support/dsp/c6000_multi-core_dsps/f/639/p/187759/674796.aspx#674796
 
@@ -108,3 +111,5 @@ void MEMSETUP_remapAndTurnCachingOff (
 //
 ////http://e2e.ti.com/cfs-file.ashx/__key/CommunityServer-Discussions-Components-Files/639/1541.XMC-_1320_-external-memory-Controller.ppt
 ////http://www.ti.com/lit/ug/sprugw0b/sprugw0b.pdf sec 7.3
+
+#endif //_TMS320C6X

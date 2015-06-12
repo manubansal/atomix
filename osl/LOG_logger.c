@@ -5,7 +5,10 @@ Released under the Apache License v2.0. See the LICENSE file for details.
 Author(s): Manu Bansal
 */
 #include <osl/inc/swpform.h>
+
+#ifdef _TMS320C6X
 #include <c6x.h>
+#endif
 
 #ifdef LOG_CONSOLE
 #ifndef LOG_STDOUT_FILE_PREFIX

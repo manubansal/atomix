@@ -9,6 +9,8 @@ Created on: Feb 23, 2012
 #ifndef AMEM4CPY_INL_H_
 #define AMEM4CPY_INL_H_
 
+#include <osl/inc/x86.h>
+
 static inline void _amem4cpy(void * restrict dst, void * restrict src, unsigned int numberOfWords) {
 	unsigned int i = 0;
 	for (i = 0; i < numberOfWords; i++) {

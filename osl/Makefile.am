@@ -10,6 +10,7 @@ CFLAGS+=-I"`_cygpath -m $(srcdir)/inc`"
 #osl library
 noinst_LIBRARIES = lib.osl.a	#GNU naming convention
 lib_osl_a_SOURCES = \
+   x86.c \
    util.c  \
    memSetup.c \
    OSL_debug.c \
