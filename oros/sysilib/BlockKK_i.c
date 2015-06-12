@@ -7,7 +7,10 @@ Author(s): Manu Bansal
 #include <osl/inc/swpform.h>
 #include "Decision_t.h"
 #include "BlockKK_stateTable.h"
+
+#ifdef _TMS320C6X
 #include <c6x.h>
+#endif
 
 void BlockKK_i(
 	IN Decision_t *bufInpDec

@@ -16,6 +16,7 @@ typedef void (*KK_StateFxnPtr)(Uint32);
 //the setup to work correctly, it is important that this data 
 //structure is allocated in each memory (default) and accessible
 //using aliased addresses.
+
 extern far KK_StateFxnPtr *__KK_stateTable__;
 
 #endif

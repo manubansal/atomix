@@ -9,7 +9,10 @@ Author(s): Manu Bansal
 #include <oros/sfifos/fifoFactory.h>
 #include <oros/sfifos/fifoManager.h>
 #include "BlockCP2_t.h"
+
+#ifdef _TMS320C6X
 #include <c6x.h>
+#endif
 
 //This simulates the transfer block T
 void BlockCP2_i(

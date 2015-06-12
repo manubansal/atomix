@@ -6,8 +6,11 @@ Author(s): Manu Bansal
 */
 #include <stdio.h>
 #include <osl/inc/swpform.h>
-#include <ti/csl/csl_tsc.h>
 #include "SYS_TimeStamp.h"
+
+#ifdef _TMS320C6X
+#include <ti/csl/csl_tsc.h>
+#endif
 
 #ifdef SYS_LOG_TO_FILE
 #define MYLOG(...) fprintf(fid, __VA_ARGS__)

@@ -6,6 +6,9 @@ ARFLAGS=${ARFLAGS.${HOST}}
 CFLAGS.ti=
 LDFLAGS.ti=
 
+CFLAGS.x86=
+LDFLAGS.x86=
+
 CFLAGS+=\
   -I"${CG_TOOL_ROOT_WIN}/include" \
   -I"${CG_TOOL_ROOT_WIN}/lib" \
@@ -139,7 +142,9 @@ CONFIG_ID=${MEMCONF}.d${DEBUGLEVEL}.t${TIMESTAMPCONF}
 EXEEXT=.${CONFIG_ID}.out
 
 SYSLOG_DIR=`_cygpath ${top_builddir}`
-CFLAGS+=-DSYS_LOG_TO_FILE  -DSYS_LOG_FILE=\\\"${SYSLOG_DIR}/syslog.txt\\\"
+
+CFLAGS.ti+=-DSYS_LOG_TO_FILE  -DSYS_LOG_FILE=\\\"${SYSLOG_DIR}/syslog.txt\\\"
+CFLAGS.x86+=-DSYS_LOG_TO_FILE  -DSYS_LOG_FILE=\"${SYSLOG_DIR}/syslog.txt\"
 
 #This works only with CCS because of CIO breakpoints mechanism that only CCS
 #knows how to handle.  CIO breakpoint handling is needed for any CIO function
@@ -169,7 +174,7 @@ LDFLAGS.nyquist=${LDFLAGS.ti}
 LDFLAGS.evm6670=${LDFLAGS.ti}
 LDFLAGS.6638k2k=${LDFLAGS.ti}
 
-CFLAGS.x86=--std=c99 -D_X86
+CFLAGS.x86+=--std=c99 -D_X86
 
 CFLAGS+=${CFLAGS.${HOST}}
 LDFLAGS+=${LDFLAGS.${HOST}}
