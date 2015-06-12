@@ -6,9 +6,10 @@ include $(top_srcdir)/Makefile.am.common
 #CFLAGS+=-I"$(top_srcdir)/osl/inc"
 CFLAGS+=-I"`_cygpath -m $(srcdir)/inc`"
 
+noinst_LIBRARIES = 
 
 #osl library
-noinst_LIBRARIES = lib.osl.a	#GNU naming convention
+noinst_LIBRARIES += lib.osl.a	#GNU naming convention
 lib_osl_a_SOURCES = \
    x86.c \
    util.c  \
@@ -20,6 +21,7 @@ lib_osl_a_SOURCES = \
 
 dist_doc_DATA = README
 
+if HOST_TYPE_TI
 #osl vitdec library
 noinst_LIBRARIES += lib.osl.vitdec.a	#GNU naming convention
 lib_osl_vitdec_a_SOURCES = \
@@ -28,6 +30,9 @@ lib_osl_vitdec_a_SOURCES = \
    vitdec/src/vcpdriver/vcpConfig.c \
    vitdec/src/vcpdriver/vcpdriver.c \
    vitdec/src/vitdec/vitdec_profile.c
+endif
+
+if HOST_TYPE_TI
 
 #osl ethernet library
 if !DEVICE_IS_6638K2K
@@ -46,8 +51,11 @@ lib_osl_eth_a_SOURCES = \
 	eth/classify2_bin.c \
 	uhd/uhd.c
 endif 
+endif #HOST_TYPE_TI
 
+if HOST_TYPE_TI
 #osl platform library
 noinst_LIBRARIES += lib.osl.platform.a #GNU naming convention
 lib_osl_platform_a_SOURCES = \
 	platform/singlecore_osal.c
+endif

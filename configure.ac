@@ -97,6 +97,20 @@ AS_CASE([$host],
 AC_SUBST([HOST])
 
 AM_CONDITIONAL([DEVICE_IS_6638K2K], [test x$HOST = x6638k2k])
+
+
+AS_CASE([$host],
+
+       [evm6474], [HOST_TYPE=TI],
+       [nyquist], [HOST_TYPE=TI],
+       [evm6670], [HOST_TYPE=TI],
+       [6638k2k], [HOST_TYPE=TI],
+       [x86], [HOST_TYPE=X86],
+#       AC_MSG_ERROR([Unknown host platform --host=$host])
+     )
+AM_CONDITIONAL([HOST_TYPE_TI], [test x$HOST_TYPE = xTI])
+AM_CONDITIONAL([HOST_TYPE_X86], [test x$HOST_TYPE = xX86])
+
 #AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 #AM_INIT_AUTOMAKE([-Wall foreign subdir-objects])
 AM_INIT_AUTOMAKE([-Wnone foreign subdir-objects])
