@@ -9,17 +9,13 @@ Author(s): Manu Bansal
 
 #include <osl/inc/swpform.h>
 #include <osl/inc/amem4cpy_inl.h>
+
+#ifdef _TMS320C6X
+
 #include <oros/sfifos/lib/edmadriver/edmaTypes.h>
 #include <oros/sfifos/lib/edmadriver/edmaDriver.h>
 
-//static inline 
-//void IPC_cpy_shm(Uint32 * restrict dst, Uint32 * restrict src, Uint32 numberOfWords) {
-//  ASSERT(FIFO_isAddressGlobal(dst));
-//  ASSERT(FIFO_isAddressGlobal(src));
-//  _amem4cpy(dst, src, numberOfWords);
-//}
-//
-//void IPC_cpy_edma(Uint32 * restrict dst, Uint32 * restrict src, Uint32 numberOfWords);
+#endif
 
 typedef enum {
   IPC_INVALID_REQUEST = -5,
@@ -32,14 +28,16 @@ typedef enum {
   IPC_TCF_CLEAR = 2
 } IPC_Status;
 
-typedef EDMA_LinkDescriptor IPC_DMA_ChannelDescriptor;
-typedef IPC_DMA_ChannelDescriptor * IPC_DMA_ChannelHandle;
-//typedef IPC_CPU_LinkDescriptor * IPC_CPU_LinkHandle;
-
 typedef enum {
   IPC_LINK_TYPE_CPU,
   IPC_LINK_TYPE_DMA
 } IPC_LinkType;
+
+#ifdef _TMS320C6X
+
+typedef EDMA_LinkDescriptor IPC_DMA_ChannelDescriptor;
+typedef IPC_DMA_ChannelDescriptor * IPC_DMA_ChannelHandle;
+//typedef IPC_CPU_LinkDescriptor * IPC_CPU_LinkHandle;
 
 typedef struct {
   IPC_LinkType linkType;
@@ -90,15 +88,6 @@ IPC_Status IPC_close();
 
 
 /**********************************************
- * CPU Transfer API
-**********************************************/
-//IPC_Status IPC_cpu_transfer(IPC_LinkHandle hL);
-IPC_Status IPC_cpu_transfer(Uint32 *src, Uint32 *dst, Uint32 numDblWords);
-//IPC_Status IPC_cpu_isTCFSet(IPC_LinkHandle hL);
-//IPC_Status IPC_cpu_clearTCF(IPC_LinkHandle hL);
-
-
-/**********************************************
  * DMA Transfer API
 **********************************************/
 //IPC_Status IPC_dma_transfer(IPC_LinkHandle hL);
@@ -106,5 +95,27 @@ IPC_Status IPC_dma_transfer(Uint32 linkNum, Uint32 *src, Uint32 *dst, Uint32 num
 
 //IPC_Status IPC_dma_isTCFSet(IPC_LinkHandle hL);
 //IPC_Status IPC_dma_clearTCF(IPC_LinkHandle hL);
+
+#endif
+
+
+/**********************************************
+ * CPU Transfer API
+**********************************************/
+//IPC_Status IPC_cpu_transfer(IPC_LinkHandle hL);
+IPC_Status IPC_cpu_transfer(Uint32 *src, Uint32 *dst, Uint32 numDblWords);
+//IPC_Status IPC_cpu_isTCFSet(IPC_LinkHandle hL);
+//IPC_Status IPC_cpu_clearTCF(IPC_LinkHandle hL);
+
+//static inline 
+//void IPC_cpy_shm(Uint32 * restrict dst, Uint32 * restrict src, Uint32 numberOfWords) {
+//  ASSERT(FIFO_isAddressGlobal(dst));
+//  ASSERT(FIFO_isAddressGlobal(src));
+//  _amem4cpy(dst, src, numberOfWords);
+//}
+//
+//void IPC_cpy_edma(Uint32 * restrict dst, Uint32 * restrict src, Uint32 numberOfWords);
+
+
 
 #endif  //__IPC_CPY_H__

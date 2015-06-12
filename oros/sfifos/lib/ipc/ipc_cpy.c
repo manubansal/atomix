@@ -7,8 +7,10 @@ Author(s): Manu Bansal
 
 #include <osl/inc/swpform.h>
 #include "ipc_cpy.h"
-#include <c6x.h>
 
+#ifdef _TMS320C6X
+
+#include <c6x.h>
 
 //void IPC_cpy_edma(Uint32 * restrict dst, Uint32 * restrict src, Uint32 numberOfWords) {
 //  ASSERT(FIFO_isAddressGlobal(dst));
@@ -227,22 +229,6 @@ IPC_Status IPC_close() {
 }
 
 /**********************************************
- * CPU Transfer API
-**********************************************/
-
-//IPC_Status IPC_cpu_transfer(IPC_LinkHandle hL) {
-IPC_Status IPC_cpu_transfer(Uint32 *src, Uint32 *dst, Uint32 numDblWords) {
-  //ASSERT(FIFO_isAddressGlobal(hL->dst));
-  //ASSERT(FIFO_isAddressGlobal(hL->src));
-  //_amem4cpy(hL->dst, hL->src, hL->numDblWords * 2);
-  _amem4cpy(dst, src, numDblWords * 2);
-  return IPC_SUCCESS;
-}
-
-//void IPC_cpu_isTCFSet(IPC_LinkHandle hL);
-//void IPC_cpu_clearTCF(IPC_LinkHandle hL);
-
-/**********************************************
  * DMA Transfer API
 **********************************************/
 
@@ -307,3 +293,23 @@ IPC_Status IPC_dma_clearTCF(Uint32 linkNum) {
 
   return IPC_SUCCESS;
 }
+
+#endif //_TMS320C6X
+
+
+/**********************************************
+ * CPU Transfer API
+**********************************************/
+
+//IPC_Status IPC_cpu_transfer(IPC_LinkHandle hL) {
+IPC_Status IPC_cpu_transfer(Uint32 *src, Uint32 *dst, Uint32 numDblWords) {
+  //ASSERT(FIFO_isAddressGlobal(hL->dst));
+  //ASSERT(FIFO_isAddressGlobal(hL->src));
+  //_amem4cpy(hL->dst, hL->src, hL->numDblWords * 2);
+  _amem4cpy(dst, src, numDblWords * 2);
+  return IPC_SUCCESS;
+}
+
+//void IPC_cpu_isTCFSet(IPC_LinkHandle hL);
+//void IPC_cpu_clearTCF(IPC_LinkHandle hL);
+

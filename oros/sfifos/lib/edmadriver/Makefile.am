@@ -5,6 +5,7 @@ include $(top_srcdir)/Makefile.am.common
 #bin_PROGRAMS = hello
 #hello_SOURCES = main.c
 
+if HOST_TYPE_TI
 noinst_LIBRARIES = lib.oros.sfifos.edmadriver.a	#GNU naming convention
 lib_oros_sfifos_edmadriver_a_SOURCES = \
   edmaDriver.c \
@@ -14,6 +15,8 @@ lib_oros_sfifos_edmadriver_a_SOURCES = \
 
 
 CFLAGS+=-I"$(srcdir)"
+
+endif
 
 dist_doc_DATA = README
 
