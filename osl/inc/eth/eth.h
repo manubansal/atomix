@@ -97,7 +97,7 @@ struct udphdr {
 typedef struct udphdr NET_udphdr;
 
 typedef struct {
-  char bytes[1600];
+  char bytes[1600] __attribute__((aligned(8)));
 } NET_t_MSS;
 
 //void eth_getMACAddress(uint8_t* macAddress);
