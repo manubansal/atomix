@@ -72,6 +72,18 @@ export DSPLIB_ROOT="$EXTLIBS_ROOT/dsplib_c66x_3_2_0_1"
 export IQMATH_ROOT="$EXTLIBS_ROOT/c64xplus-iqmath_2_01_04_00"
 export UNITY_ROOT="$EXTLIBS_ROOT/unity"
 
+export PDK_ROOT=/home/manub/workspace/tiextlibs/pdk_C6670_1_1_2_5/packages
+export ATOMIX_INSTALL_DIR=$ATOMIX_ROOT/build
+export PLIB_INC_DIR=/home/manub/workspace/plib
+export PLIB_INSTALL_DIR=/home/manub/workspace/plib/build
+export ORILIB_INC_DIR=/home/manub/workspace/orilib
+export ORILIB_INSTALL_DIR=/home/manub/workspace/orilib/build
+
+#------------
+
+alias cygpath="_cygpath"
+
+
 export BUILD_UTILS_ROOT=$ATOMIX_ROOT_LINUX_STYLE/r2cmplr:$ATOMIX_ROOT_LINUX_STYLE/r1cmplr
 export PATH=$BUILD_UTILS_ROOT:"$CG_TOOL_ROOT/bin":$PATH
 export PATH=$PATH:$ATOMIX_ROOT_LINUX_STYLE/tracescripts
