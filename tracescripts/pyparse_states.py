@@ -79,35 +79,6 @@ def state_synchronize_timestamps(ddtup, syncState):
   ddtup = (dd0, dd1, dd2, dd3)
   return ddtup
 
-def state_separate_out_timestamps(ddtup, fifo_wait_ts_ids, fifo_wait_ts_ids_to_plot, trace_reader_ts_ids):
-  (dd0, dd1, dd2, dd3) = ddtup
-  #------------------------------------------------------------------
-  fmin, fmax = fifo_wait_ts_ids
-  fmin_to_plot, fmax_to_plot = fifo_wait_ts_ids_to_plot
-  trin, trout = trace_reader_ts_ids
-
-  #separate out fifo wait timestamps
-  dd0_w = [(idv,ts) for (idv,ts) in dd0 if int(idv) >= fmin_to_plot and int(idv) <= fmax_to_plot]
-  dd1_w = [(idv,ts) for (idv,ts) in dd1 if int(idv) >= fmin_to_plot and int(idv) <= fmax_to_plot]
-  dd2_w = [(idv,ts) for (idv,ts) in dd2 if int(idv) >= fmin_to_plot and int(idv) <= fmax_to_plot]
-  dd3_w = [(idv,ts) for (idv,ts) in dd3 if int(idv) >= fmin_to_plot and int(idv) <= fmax_to_plot]
-
-  #separate out tracereader timestamps
-  dd0_tr = [(idv,ts) for (idv,ts) in dd0 if int(idv) >= trin and int(idv) <= trout]
-  dd1_tr = [(idv,ts) for (idv,ts) in dd1 if int(idv) >= trin and int(idv) <= trout]
-  dd2_tr = [(idv,ts) for (idv,ts) in dd2 if int(idv) >= trin and int(idv) <= trout]
-  dd3_tr = [(idv,ts) for (idv,ts) in dd3 if int(idv) >= trin and int(idv) <= trout]
-
-  #keep only state timestamps
-  dd0 = [(idv,ts) for (idv,ts) in dd0 if int(idv) < fmin] 
-  dd1 = [(idv,ts) for (idv,ts) in dd1 if int(idv) < fmin] 
-  dd2 = [(idv,ts) for (idv,ts) in dd2 if int(idv) < fmin] 
-  dd3 = [(idv,ts) for (idv,ts) in dd3 if int(idv) < fmin] 
-  #------------------------------------------------------------------
-  ddtup = (dd0, dd1, dd2, dd3)
-  ddtup_w = (dd0_w, dd1_w, dd2_w, dd3_w)
-  ddtup_tr = (dd0_tr, dd1_tr, dd2_tr, dd3_tr)
-  return ddtup, ddtup_w, ddtup_tr
 
 def state_dump_data(coreid_s_tin_tout_pktn_repn, stlabels, \
 	coreid_wcyin_wcyout, coreid_bcyin_bcyout, core_utils):
