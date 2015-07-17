@@ -1,0 +1,112 @@
+#!/usr/bin/env python
+
+import sys, pickle, os
+import numpy as np
+
+def state_completion_time_stats(allwins, tin, tout):
+  #------------------------------------------------------------------
+  ## completion times ##
+  #print zip(tin, tout)
+  completion_times = []
+  for i, ti, to, win in zip(range(len(allwins)), tin, tout, allwins):
+    print 'Display window #', i
+    tmin = min(min(ti), min(to))
+    print 'tmin=',tmin
+    ti = [t - tmin for t in ti]
+    to = [t - tmin for t in to]
+    print ti, to
+
+    completion_times.append(max(to))
+    
+    dd0 = [d0 for d0, d1, d2, d3 in win]
+    dd1 = [d1 for d0, d1, d2, d3 in win]
+    dd2 = [d2 for d0, d1, d2, d3 in win]
+    dd3 = [d3 for d0, d1, d2, d3 in win]
+
+    dd0 = [(idv,int((ts)-tmin)) for (idv,ts) in dd0]
+    dd1 = [(idv,int((ts)-tmin)) for (idv,ts) in dd1]
+    dd2 = [(idv,int((ts)-tmin)) for (idv,ts) in dd2]
+    dd3 = [(idv,int((ts)-tmin)) for (idv,ts) in dd3]
+
+    for r in zip(dd0, dd1, dd2, dd3):
+      print r
+  #------------------------------------------------------------------
+
+
+  #------------------------------------------------------------------
+  completion_time_mean = np.mean(completion_times)
+  completion_time_std = np.std(completion_times)
+  completion_time_max = max(completion_times)
+  completion_time_min = min(completion_times)
+  completion_time_diff = completion_time_max - completion_time_min
+  completion_time_mean = np.mean(completion_times)
+
+  y = completion_time_mean
+  ys = completion_times
+  erry = completion_time_diff
+  #------------------------------------------------------------------
+  state_stats = (y, erry, ys)
+  last_tmin = tmin
+  return state_stats, last_tmin
+
+def state_proc_time_cdf(state_stats):
+  y, erry, ys = state_stats
+  completion_times = ys
+  #------------------------------------------------------------------
+  hist, bin_edges = np.histogram(completion_times, 20, density=True)
+  print bin_edges
+  print hist
+  hist = hist * np.diff(bin_edges)
+  csum = np.cumsum(hist) 
+  #------------------------------------------------------------------
+  state_stats = (y, erry, ys, csum, bin_edges)
+  return state_stats
+
+
+def state_pickledepickle_stat_data(state_stats, fname):
+  #------------------------------------------------------------------
+  y, erry, ys = state_stats
+  pltData = [y, erry, ys]
+  print os.getcwd()
+  tag = os.getcwd().split('trace')[1].split('/')[-1]
+  print tag
+  #fname = '../st_hist_stats.pkl'
+  try:
+    f = open(fname,'rb')
+    try:
+      d = pickle.load(f)
+    except EOFError:
+      d = {}
+    f.close()
+  except IOError:
+    d = {}
+
+  f = open(fname, 'wb')
+  d[tag] = pltData
+  pickle.dump(d, f)
+  f.close()
+  print 'Saved st plot data to %s' % fname
+  #------------------------------------------------------------------
+
+
+
+def main():
+  tf = sys.argv[1]
+  dumpfile = sys.argv[2]
+
+  print 'Loading trace from', tf
+  wins = pickle.load(open(tf, "rb"))
+  allwins, tin, tout = wins
+
+  state_stats, last_tmin = state_completion_time_stats(allwins, tin, tout)
+
+  state_pickledepickle_stat_data(state_stats, dumpfile)
+  print 'Written', dumpfile
+
+  state_stats = state_proc_time_cdf(state_stats)
+  print state_stats
+
+
+
+if __name__ == "__main__":
+  main()

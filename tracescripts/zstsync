@@ -1,0 +1,85 @@
+#!/usr/bin/python
+
+import sys, pickle
+from zutil import *
+
+def state_synchronize_timestamps(ddtup, syncState):
+  #------------------------------------------------------------------
+  ## synchronize timestamps from different cores ##
+  (dd0, dd1, dd2, dd3) = ddtup
+
+  for idv,ts in dd0:
+    if idv == syncState:
+      break
+  t0ss = ts
+
+  for idv,ts in dd1:
+    if idv == syncState:
+      break
+  t1ss = ts
+
+  for idv,ts in dd2:
+    if idv == syncState:
+      break
+  t2ss = ts
+
+  for idv,ts in dd3:
+    if idv == syncState:
+      break
+  t3ss = ts
+
+  print 'syncState entry times: ', t0ss, t1ss, t2ss, t3ss
+  off1 = t1ss - t0ss
+  off2 = t2ss - t0ss
+  off3 = t3ss - t0ss
+  print 'Offsets: ', off1, off2, off3
+
+  dd1 = [(idv,ts - off1) for (idv,ts) in dd1]
+  dd2 = [(idv,ts - off2) for (idv,ts) in dd2]
+  dd3 = [(idv,ts - off3) for (idv,ts) in dd3]
+
+  tmin0 = dd0[0][1]
+  tmin1 = dd1[0][1]
+  tmin2 = dd2[0][1]
+  tmin3 = dd3[0][1]
+
+  tmin = min([tmin0, tmin1, tmin2, tmin3])
+  print 'tmin: ', tmin
+
+  dd0 = [(idv,int((ts)-tmin)) for (idv,ts) in dd0]
+  dd1 = [(idv,int((ts)-tmin)) for (idv,ts) in dd1]
+  dd2 = [(idv,int((ts)-tmin)) for (idv,ts) in dd2]
+  dd3 = [(idv,int((ts)-tmin)) for (idv,ts) in dd3]
+  #------------------------------------------------------------------
+  ddtup = (dd0, dd1, dd2, dd3)
+  return ddtup
+
+def main():
+  tracefile = sys.argv[1]
+  pdumpfile = sys.argv[2]
+  tdumpfile = sys.argv[3]
+  syncState = sys.argv[4]
+  sttabfile = sys.argv[5]
+  print 'Synchronizing state timestamps in', tracefile, 'on', syncState
+
+  stlabels, stidfromlabel = state_labels_from_file(sttabfile)
+  syncState = [key for key in stlabels if stlabels[key] == syncState]
+  syncState = syncState[0]
+  #print syncState
+
+
+  ddtup = pickle.load(open(tracefile, "rb"))
+  ddtup = state_synchronize_timestamps(ddtup, syncState)
+  #print ddtup
+
+  pickle.dump(ddtup, open(pdumpfile, "wb"))
+  f = open(tdumpfile, "w")
+  f.write(str(ddtup))
+  f.close()
+
+  print 'Written', pdumpfile
+  print 'Written', tdumpfile
+
+
+if __name__ == "__main__":
+  main()
