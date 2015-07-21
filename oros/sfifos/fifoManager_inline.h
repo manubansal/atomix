@@ -22,6 +22,33 @@ void FIFO_error(Uint32 err);
 
 //#define TS_FIFO_WAIT
 
+static inline void FIFO_flush(
+	FIFO_Handle restrict f,
+	Uint32 nBuffers,
+	FIFO_BufferHandle f_b
+	){
+	Uint32 i;
+	FIFO_BufferHandle b;
+	f->idxNextReadBuffer = 0;
+	f->idxNextWriteBuffer = 0;
+	for (i = 0; i < nBuffers; ++i) {
+		 b = &(f_b[i]);
+		 if (b->status == FIFO_BUFFER_BEING_WRITTEN) {
+		     FIFO_waitWTC(f, b);
+		 } else if (b->status == FIFO_BUFFER_BEING_READ) {
+			 FIFO_waitRTC(f, b);
+		 }
+		 b->status = FIFO_BUFFER_EMPTY;
+		 b->isTCCValid = 0;
+	}
+	f->anyReadBusyHead = 0;
+	f->idxReadBusyHead = 0;
+	f->anyWriteBusyHead = 0;
+	f->idxWriteBusyHead = 0;
+}
+
+
+
 static inline FIFO_BufferHandle FIFO_getNextReadBuffer(
 	FIFO_Handle restrict f, 
 	Uint32 nBuffers,
@@ -92,7 +119,7 @@ static inline FIFO_BufferHandle FIFO_getNextReReadBuffer(
 	SYS_TimeStamp_aliased(1115ULL);
 #endif
 
-  if (b->status != FIFO_BUFFER_FILLED) {
+  if (b->status != FIFO_BUFFER_EMPTY) {
       FIFO_waitWTC(f, b);
   }
 #ifdef TS_FIFO_WAIT
