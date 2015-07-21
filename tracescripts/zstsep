@@ -1,0 +1,85 @@
+#!/usr/bin/python
+
+import sys, cmd, imp, pickle, os
+from zutil import *
+
+
+def state_separate_out_timestamps(ddtup, fifo_wait_ts_ids, fifo_wait_ts_ids_to_plot, trace_reader_ts_ids):
+  (dd0, dd1, dd2, dd3) = ddtup
+  #------------------------------------------------------------------
+  fmin, fmax = fifo_wait_ts_ids
+  fmin_to_plot, fmax_to_plot = fifo_wait_ts_ids_to_plot
+  trin, trout = trace_reader_ts_ids
+
+  #separate out fifo wait timestamps
+  dd0_w = [(idv,ts) for (idv,ts) in dd0 if int(idv) >= fmin_to_plot and int(idv) <= fmax_to_plot]
+  dd1_w = [(idv,ts) for (idv,ts) in dd1 if int(idv) >= fmin_to_plot and int(idv) <= fmax_to_plot]
+  dd2_w = [(idv,ts) for (idv,ts) in dd2 if int(idv) >= fmin_to_plot and int(idv) <= fmax_to_plot]
+  dd3_w = [(idv,ts) for (idv,ts) in dd3 if int(idv) >= fmin_to_plot and int(idv) <= fmax_to_plot]
+
+  #separate out tracereader timestamps
+  dd0_tr = [(idv,ts) for (idv,ts) in dd0 if int(idv) >= trin and int(idv) <= trout]
+  dd1_tr = [(idv,ts) for (idv,ts) in dd1 if int(idv) >= trin and int(idv) <= trout]
+  dd2_tr = [(idv,ts) for (idv,ts) in dd2 if int(idv) >= trin and int(idv) <= trout]
+  dd3_tr = [(idv,ts) for (idv,ts) in dd3 if int(idv) >= trin and int(idv) <= trout]
+
+  #keep only state timestamps
+  dd0 = [(idv,ts) for (idv,ts) in dd0 if int(idv) < fmin] 
+  dd1 = [(idv,ts) for (idv,ts) in dd1 if int(idv) < fmin] 
+  dd2 = [(idv,ts) for (idv,ts) in dd2 if int(idv) < fmin] 
+  dd3 = [(idv,ts) for (idv,ts) in dd3 if int(idv) < fmin] 
+  #------------------------------------------------------------------
+  ddtup = (dd0, dd1, dd2, dd3)
+  ddtup_w = (dd0_w, dd1_w, dd2_w, dd3_w)
+  ddtup_tr = (dd0_tr, dd1_tr, dd2_tr, dd3_tr)
+  return ddtup, ddtup_w, ddtup_tr
+
+
+def main():
+  print 'Parsing for tsconf=st'
+  tf = sys.argv[1]
+  print 'Loading trace from', tf
+  ddtup = pickle.load(open(tf, "rb"))
+
+  pdumpfile = sys.argv[2]
+  pdumpfile_ww = sys.argv[3]
+  pdumpfile_tr = sys.argv[4]
+
+  print tf, pdumpfile, pdumpfile_ww, pdumpfile_tr
+
+  sttabfile = sys.argv[5]
+  print 'Using state profiling table from', sttabfile
+
+  confFile = sys.argv[6]
+  print 'Loading configuration from', confFile
+  confm = imp.load_source('jj', confFile)
+  conf = confm.conf
+
+  stin 			= conf['stin']
+  stout 		= conf['stout']
+  syncState 		= conf['syncState']
+  fifo_wait_ts_ids 	= conf['fifo_wait_ts_ids']
+  fifo_wait_ts_ids_to_plot = conf['fifo_wait_ts_ids_to_plot']
+  tri 			= conf['traceReaderInTSID']
+  tro 			= conf['traceReaderOutTSID']
+
+  fmin, fmax = fifo_wait_ts_ids
+  fifo_wait_ts_ids = (int(fmin), int(fmax))
+  fmin_to_plot, fmax_to_plot = fifo_wait_ts_ids
+  fifo_wait_ts_ids_to_plot = (int(fmin_to_plot), int(fmax_to_plot))
+  trace_reader_ts_ids = (int(tri), int(tro))
+
+  ddtup, ddtup_w, ddtup_tr = \
+  	state_separate_out_timestamps(ddtup, fifo_wait_ts_ids, fifo_wait_ts_ids_to_plot, trace_reader_ts_ids)
+
+  pickle.dump(ddtup, open(pdumpfile, "wb"))
+  pickle.dump(ddtup_w, open(pdumpfile_ww, "wb"))
+  pickle.dump(ddtup_tr, open(pdumpfile_tr, "wb"))
+
+  print 'Written', pdumpfile
+  print 'Written', pdumpfile_ww
+  print 'Written', pdumpfile_tr
+
+
+if __name__ == "__main__":
+  main()

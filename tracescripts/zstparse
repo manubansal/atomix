@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+tf=$1
+shift
+tf1=$tf.gg.txt
+cat $tf | grep "DNUM .* id .* ts" > $tf1
+echo "tf1: $tf1"
+
+zpreproc $tf.gg.txt $tf.pp.pkl $tf.pp.txt
+zstsync $tf.pp.pkl $tf.sy.pkl $tf.sy.txt staRxPLCPDecode $@
+zstsep $tf.sy.pkl $tf.st.pkl $tf.ww.pkl $tf.tr.pkl $@
+zstwins $tf.sy.pkl $tf.pw.pkl $tf.pw.txt $@
+zststats $tf.pw.pkl $tf.ss.pkl
+zstplot $tf.sy.pkl $@
+
+#zstpyparse $tf.sy.pkl $@

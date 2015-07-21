@@ -1,0 +1,189 @@
+#!/usr/bin/python
+
+import sys, cmd, imp, pickle, os
+from zutil import *
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+import pickle
+import os
+import sys
+from matplotlib.patches import Rectangle
+import math
+from pyparse_util import sorted_interval_match
+
+##-------------------------
+#def plot_states(tf, alldd, state_profiling_table_file="", waitwins=[], conf={}, alldd_w=[], trdata=([],[],[])):
+##-------------------------
+#  plot_states_pdf(tf, alldd, state_profiling_table_file, waitwins, conf, alldd_w, trdata)
+#  return
+#
+##-------------------------
+#def plot_states_pdf(tf, alldd, state_profiling_table_file="", waitwins=[], conf={}, alldd_w=[], trdata=([],[],[])):
+##-------------------------
+#
+def plot_states(tf, alldd, state_profiling_table_file="", waitwins=[], conf={}, alldd_w=[], trdata=([],[],[])):
+#-------------------------
+  fig = plt.figure(figsize=(10,8), dpi=1200)
+  ax = fig.add_subplot(111)
+  axR = plt.subplot(1,1,1, sharex=ax, frameon=False)
+  axR.yaxis.tick_right()
+  axR.yaxis.set_label_position("right")
+
+  #----------------------------------------
+  ### read and prepare configuration
+  #----------------------------------------
+  ofdm_sym_dur_us 	= conf['ofdm_sym_dur_us']
+  clock_rate_mhz 	= conf['clock_rate_mhz']
+  ssi 			= conf['sample_consumption_starts_in_state']
+  sso 			= conf['sample_consumption_ends_in_state']
+  spi 			= conf['rx_pkt_init_state']
+  spo 			= conf['rx_data_finish_state']
+
+  #ddtup_tr, trins, trcounts, totrcnts, cumrcnts = trdata
+  #alldd_tr = ddtup_tr
+
+  if state_profiling_table_file:
+    f = open(state_profiling_table_file, 'r')
+    state_profiling_table = [l.strip().split(',') for l in f.readlines()]
+    f.close()
+
+  dd0, dd1, dd2, dd3 = alldd
+
+  print 'dd0:', dd0
+  print 'dd3:', dd3
+
+  c0_ts = [ts for (st, ts) in dd0]
+  c0_st = [st for (st, ts) in dd0]
+
+  c1_ts = [ts for (st, ts) in dd1]
+  c1_st = [st for (st, ts) in dd1]
+
+  c2_ts = [ts for (st, ts) in dd2]
+  c2_st = [st for (st, ts) in dd2]
+
+  c3_ts = [ts for (st, ts) in dd3]
+  c3_st = [st for (st, ts) in dd3]
+
+  #ls = [[ts for st, ts in ddi if st == sso] for ddi in alldd]
+  #xmax = max([l[1] for l in ls])
+  xmax = 100000000
+  xmin = 0
+  plt.xlim(xmin,xmax)
+
+  all_states_visited = sorted([int(s) for s in set(c0_st + c1_st + c2_st + c3_st)])
+  visited_states_enumeration = enumerate(all_states_visited)
+  visited_states_dict = {}
+  for i,s in visited_states_enumeration:
+    visited_states_dict[s] = i
+  vsd = visited_states_dict
+  #print all_states_visited
+  #print visited_states_enumeration
+  #print visited_states_dict
+  #raw_input()
+
+  dy = 0.2
+
+  c0_st = [float(vsd[int(s)]) + 0 * dy for s in c0_st] 
+  c1_st = [float(vsd[int(s)]) + 1 * dy for s in c1_st] 
+  c2_st = [float(vsd[int(s)]) + 2 * dy for s in c2_st]
+  c3_st = [float(vsd[int(s)]) + 3 * dy for s in c3_st]
+
+  plt.plot(c0_ts, c0_st, 'rx-', c1_ts, c1_st, 'gx-', c2_ts, c2_st, 'bx-', c3_ts, c3_st, 'k.-')
+
+  xmin, xmax = ax.get_xlim()
+  xmin = 0
+  xmax = int(math.ceil(xmax))
+
+  ts_max = xmax + 1000
+  state_ids = []
+  yy = []
+  lbls = []
+  for e in state_profiling_table:
+    id,lbl = e
+    id = int(id)
+    if not id in vsd:
+      continue
+    id = vsd[id]
+    state_ids.append(id)
+    xy = (ts_max, id + dy)
+    print xy
+
+    #plt.annotate(lbl.strip(), xy)
+
+    yy.append(id)
+    lbls.append("%2d %s" % (id, lbl))
+
+  #plt.yticks(yy, lbls)
+  axR.set_yticklabels(lbls)
+
+  ymin, ymax = ax.get_ylim()
+
+
+  #ax.axes.get_yaxis().set_visible(False)
+  ax.set_frame_on(False)
+  ax.get_xaxis().tick_bottom()
+
+  plt.grid(True)
+
+  ofdm_sym_dur_cyc 	= ofdm_sym_dur_us * clock_rate_mhz
+
+  plt.yticks(state_ids)
+  #ax.set_yticklabels(state_ids)
+
+  plt.xlabel('Timestamp (cycle)')
+  #plt.ylabel('State number')
+
+  #add ofdm symbol markers
+  xticks, lbls = plt.xticks()
+  xticks = list(xticks)
+  #lbls = [l.get_text() for l in lbls]
+  lbls = ['%d' % int(t) for t in xticks]
+  print xticks
+  print lbls
+  plt.legend(['dsp0', 'dsp1', 'dsp2', 'dsp3'], loc='upper left')
+
+  xmin -= ofdm_sym_dur_cyc
+  plt.xlim(xmin,xmax)
+
+  #plt.margins(0.5)	#extend axis limits by this fraction
+
+  plt.tight_layout()
+  plt.subplots_adjust(left=0.07, right=0.55, bottom=0.18, top=0.98, wspace=0, hspace=0)
+
+  #rmargin = 100000
+  #bmargin = 10000
+  #x0, x1, y0, y1 = plt.axis()
+  #plt.axis((x0, x1 + rmargin, y0, y1)) 
+
+
+  locs, labels = plt.xticks()
+  plt.setp(labels, rotation=30)
+
+  plt.savefig('%s_plot_states.png.pdf' % tf)
+
+
+
+
+def main():
+  print 'Parsing for tsconf=st'
+  tf = sys.argv[1]
+  print 'Loading trace from', tf
+  ddtup = pickle.load(open(tf, "rb"))
+
+  sttabfile = sys.argv[2]
+  print 'Using state profiling table from', sttabfile
+
+  confFile = sys.argv[3]
+  print 'Loading configuration from', confFile
+  confm = imp.load_source('jj', confFile)
+  conf = confm.conf
+
+
+  print 'Plotting state timestamps'
+  #plot_states(tf, ddtup, sttabfile, waitwins, conf, ddtup_w, trdata)
+  plot_states(tf, ddtup, sttabfile, [], conf)
+
+
+if __name__ == "__main__":
+  main()

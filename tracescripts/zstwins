@@ -1,0 +1,203 @@
+#!/usr/bin/python
+
+import sys, cmd, imp, pickle, os
+from zutil import *
+
+
+def state_dump_data(coreid_s_tin_tout_pktn_repn, stlabels, outfname):
+  print 'saving pkt-labeled state transitions to', outfname
+
+  #------------------------------------------------------------------
+  ## dump processed data 
+  #outfname = '__data_state_transitions.txt'
+  f = open(outfname, 'w')
+
+  for (coreid,s,tin,tout,pktn,repn) in coreid_s_tin_tout_pktn_repn:
+    lb = stlabels[s]
+    print >>f, "coreid=%s,st=%s,cyin=%s,cyout=%s,pktn=%s,repn=%s,lb=%s" % \
+    	(coreid, s, tin, tout, pktn, repn, lb)
+
+
+  #------------------------------------------------------------------
+
+
+def state_extract_packet_windows_arbitrary_states(ddtup, stin, stout, stidfromlabel):
+  stlbin,coreidin = tuple(stin.split(':'))
+  stlbout,coreidout = tuple(stout.split(':'))
+  coreidin = int(coreidin); coreidout = int(coreidout)
+  stin = stidfromlabel[stlbin]
+  stout = stidfromlabel[stlbout]
+  #print stlbin, stin, stlbout, stout, coreidin, coreidout
+  (dd0, dd1, dd2, dd3) = ddtup
+  pktn_en_ex_ix_tups = []
+  for dd in ddtup:
+    in_idxs = [i for i,(s,t) in enumerate(dd) if s == stin]
+    in_idxs = in_idxs[::2]
+    out_idxs = [i for i,(s,t) in enumerate(dd) if s == stout]
+    out_idxs = out_idxs[1::2]
+    pktn_entry_exit_idx_tuples = [e for e in enumerate(zip(in_idxs,out_idxs))]
+    #print pktn_entry_exit_idx_tuples
+    pktn_en_ex_ix_tups.append(pktn_entry_exit_idx_tuples)
+
+  #print pktn_en_ex_ix_tups
+  #array of array of tuples. top-level array contains an array for each core. each core 
+  #array contains tuples. each tuple indicates a pkt with the following structure:
+  #(pktid, (entry_idx, exit_idx))
+  #where the idx is on dd array for that core.
+
+  #sample and hold pktid information
+  pktid_expanded_lists = []
+  for l in pktn_en_ex_ix_tups:
+    pktid_expanded_list = []
+    prev_exit_idx = -1
+    for pktid, (entry_idx, exit_idx) in l:
+      #print pktid, entry_idx, exit_idx
+      a1 = [-1] * (entry_idx - prev_exit_idx - 1)
+      a2 = [pktid] * (exit_idx - entry_idx + 1)
+      a = a1 + a2
+      pktid_expanded_list += a
+      prev_exit_idx = exit_idx
+    #print pktid_expanded_list
+    pktid_expanded_lists.append(pktid_expanded_list)
+
+  #attach pid column
+  dd_pids = []
+  for dd, pidlist in zip(ddtup, pktid_expanded_lists):
+  #(for each core)
+    idx_dd = [e for e in enumerate(dd)]
+    dd_pid = zip(dd, pidlist)
+
+    #double up states so that entry and exit are on the same row
+    dd_pid_in = dd_pid[::2]
+    dd_pid_out = dd_pid[1::2]
+    dd_pid = zip(dd_pid_in,dd_pid_out)
+
+
+    dd_pids.append(dd_pid)
+    #schema: (s,t),pktnumber,(s,t),pktnumber	
+    #(pktnumber is -1 for parts that are not in pkt states)
+    #first (s,t) tuple indicates state entry, second indicates state exit
+
+    #for e in dd_pid:
+    #  print e
+
+  #deduce state repeat counts
+  dd_pid_rep_coreid = []
+  for coreid, dd_pid in enumerate(dd_pids):
+    ppid = -1
+    ps = '-1'
+    repcount = 0
+    repcounts = []
+    for ((s,t),pid),((sout,tout),pid) in dd_pid:
+      if s != sout:
+        print 'ERROR: state id mismatch on the same row'
+	sys.exit(1)
+      if s == ps:  #repeat state
+        if pid == ppid: #same pkt
+	  repcount += 1
+	else:
+	  repcount = 0
+      else:
+	repcount = 0
+      repcounts.append(repcount)
+      ps = s
+      ppid = pid
+    #attach coreids too
+    coreidexp = [coreid] * len(dd_pid)
+    dd_pid_rep_cid = zip(dd_pid,repcounts,coreidexp)
+    dd_pid_rep_coreid += dd_pid_rep_cid
+
+  #print '----------------'
+  #clean up redundant columns
+  coreid_s_tin_tout_pktn_repn = [(coreid,s,tin,tout,pktn,repn) for \
+  	((((s,tin),pktn),((_,tout),_)),repn,coreid) in dd_pid_rep_coreid]
+  #for e in coreid_s_tin_tout_pktn_repn:
+  #  print e
+
+  return coreid_s_tin_tout_pktn_repn  
+
+
+def state_extract_packet_windows(ddtup, stin, stout):
+  (dd0, dd1, dd2, dd3) = ddtup
+  #------------------------------------------------------------------
+  ## extract data-decode windows based on entry and exit states ##
+  win_on = 0
+  win = []
+  allwins = []
+  tin = []
+  tout = []
+  for r in zip(dd0, dd1, dd2, dd3):
+    d0, d1, d2, d3 = r
+    s0,t0 = d0
+    s1,t1 = d1
+    s2,t2 = d2
+    s3,t3 = d3
+    if (len(set([s0,s1,s2,s3])) > 1):
+      print 'States do not match'
+      print r
+      sys.exit(1)
+
+    if (s0 == stin and win_on == 0):
+      win_on = 1
+      tin.append([t0, t1, t2, t3])
+
+    if win_on:
+      win.append(r)
+
+    if (s0 == stout and win_on == 1):
+      win_on = 0
+      tout.append([t0, t1, t2, t3])
+      allwins.append(win)
+      win = []
+
+  print len(allwins), 'data-decode windows extracted'
+  #print allwins
+  #------------------------------------------------------------------
+  return allwins, tin, tout
+
+
+def main():
+  print 'Parsing for tsconf=st'
+
+  tf = sys.argv[1]
+  print 'Loading trace from', tf
+  ddtup = pickle.load(open(tf, "rb"))
+
+  pdumpfile = sys.argv[2]
+  tdumpfile = sys.argv[3]
+
+  sttabfile = sys.argv[4]
+  print 'Using state profiling table from', sttabfile
+
+  confFile = sys.argv[5]
+  print 'Loading configuration from', confFile
+  confm = imp.load_source('jj', confFile)
+  conf = confm.conf
+
+  stin 			= conf['stin']
+  stout 		= conf['stout']
+
+
+  stlabels, stidfromlabel = state_labels_from_file(sttabfile)
+
+  ##----
+  stin_ = stidfromlabel[stin.split(':')[0]]
+  stout_ = stidfromlabel[stout.split(':')[0]]
+  allwins, tin, tout = state_extract_packet_windows(ddtup, stin_, stout_)
+  wins = (allwins, tin, tout)
+  pickle.dump(wins, open(pdumpfile, "wb"))
+  print 'Written', pdumpfile
+  ##----
+
+
+  ##----
+  coreid_s_tin_tout_pktn_repn = state_extract_packet_windows_arbitrary_states(\
+  	ddtup, stin, stout, stidfromlabel)
+  outfname = tdumpfile
+  state_dump_data(coreid_s_tin_tout_pktn_repn, stlabels, outfname)
+  print 'Written', tdumpfile
+  ##----
+
+
+if __name__ == "__main__":
+  main()

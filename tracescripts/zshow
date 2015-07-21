@@ -1,0 +1,29 @@
+#!/usr/bin/python
+
+import sys, cmd, imp, pickle, os
+from zutil import *
+
+def main():
+  tf = sys.argv[1]
+  print 'Showing ddtup from', tf
+
+  ddtup = pickle.load(open(tf, "rb"))
+  #print ddtup
+  ncores = len(ddtup)
+  print "ncores:", ncores
+
+  for i in range(0,ncores):
+    print "---------------"
+    print "core ", (i+1)
+    print "---------------"
+    dd = ddtup[i]
+    j = min(6,len(dd))
+    for k, e in enumerate(dd[0:j]):
+      print k, e
+    print '...'
+    print 'total', len(dd), 'entries'
+
+  #import pdb; pdb.set_trace()
+
+if __name__ == "__main__":
+  main()

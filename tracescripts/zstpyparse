@@ -1,0 +1,74 @@
+#!/usr/bin/python
+
+import sys, cmd, imp, pickle, os
+from zutil import *
+
+
+
+def main():
+  print 'Parsing for tsconf=st'
+  tf = sys.argv[1]
+  print 'Loading trace from', tf
+  ddtup = pickle.load(open(tf, "rb"))
+
+  sttabfile = sys.argv[2]
+  print 'Using state profiling table from', sttabfile
+
+  confFile = sys.argv[3]
+  print 'Loading configuration from', confFile
+  confm = imp.load_source('jj', confFile)
+  conf = confm.conf
+
+
+  print 'Parsing state timestamps'
+#  alldd, allwins, waitwins, alldd_w, trdata = \
+#  parse_states('st', tf, ddtup, sttabfile, conf)
+#def parse_states(cmd, tf, ddtup, sttabfile, conf):
+  stin 			= conf['stin']
+  stout 		= conf['stout']
+  syncState 		= conf['syncState']
+  fifo_wait_ts_ids 	= conf['fifo_wait_ts_ids']
+  fifo_wait_ts_ids_to_plot = conf['fifo_wait_ts_ids_to_plot']
+  tri 			= conf['traceReaderInTSID']
+  tro 			= conf['traceReaderOutTSID']
+
+  fmin, fmax = fifo_wait_ts_ids
+  fifo_wait_ts_ids = (int(fmin), int(fmax))
+  fmin_to_plot, fmax_to_plot = fifo_wait_ts_ids
+  fifo_wait_ts_ids_to_plot = (int(fmin_to_plot), int(fmax_to_plot))
+  trace_reader_ts_ids = (int(tri), int(tro))
+
+  stlabels, stidfromlabel = state_labels_from_file(sttabfile)
+  syncState = [key for key in stlabels if stlabels[key] == syncState]
+  syncState = syncState[0]
+
+
+
+  coreid_s_tin_tout_pktn_repn = state_extract_packet_windows_arbitrary_states(\
+  	ddtup, stin, stout, stidfromlabel)
+
+  coreid_wcyin_wcyout, coreid_bcyin_bcyout = state_extract_wait_and_busy_data(\
+  	ddtup_w)
+
+  core_utils = compute_core_util_stats(coreid_bcyin_bcyout, coreid_s_tin_tout_pktn_repn)
+
+  trins, trcounts, totrcnts, cumrcnts = \
+	analyze_tracereads(ddtup_tr, coreid_s_tin_tout_pktn_repn, trace_reader_ts_ids)
+
+  trdata = (ddtup_tr, trins, trcounts, totrcnts, cumrcnts)
+
+  state_dump_data(coreid_s_tin_tout_pktn_repn, stlabels,\
+	coreid_wcyin_wcyout, coreid_bcyin_bcyout, core_utils)
+
+
+  #if cmd == 'st':
+  return (ddtup, [], [], ddtup_w, trdata)
+
+
+  print 'Plotting state timestamps'
+  #plot_states(tf, alldd, sttabfile, waitwins, conf, alldd_w, trdata)
+  plot_states(tf, ddtup, sttabfile, waitwins, conf, ddtup_w, trdata)
+
+
+if __name__ == "__main__":
+  main()
