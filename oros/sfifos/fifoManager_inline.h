@@ -47,6 +47,20 @@ static inline void FIFO_flush(
 	f->idxWriteBusyHead = 0;
 }
 
+static inline void FIFO_rollBackN(
+	FIFO_Handle restrict f,
+	Uint32 N
+	) {
+	Uint32 idxRead = f->idxNextReadBuffer;
+	Uint32 i;
+	for (i = 0; i < N; ++i) {
+		if (idxRead == 0) {
+			break;
+		}
+		--idxRead;
+	}
+	f->idxNextReadBuffer = idxRead;
+}
 
 
 static inline FIFO_BufferHandle FIFO_getNextReadBuffer(
