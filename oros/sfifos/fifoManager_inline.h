@@ -62,6 +62,49 @@ static inline void FIFO_rollBackN(
 	f->idxNextReadBuffer = idxRead;
 }
 
+static inline FIFO_BufferHandle FIFO_getNextReadBuffer_peak(
+	FIFO_Handle restrict f,
+	Uint32 nBuffers,
+	FIFO_BufferHandle f_b
+	){
+
+  FIFO_BufferHandle b;
+  //Uint32 nBuffers = f->nBuffersInFifo;
+  Uint32 idxRead = f->idxNextReadBuffer;
+
+  //b = &(f->bufferStates[idxRead]);
+  b = &(f_b[idxRead]);
+
+  //DEBUG(
+  //Uint32 localCoreId = f->locatedOnCoreId;	//the core on which this fifo is located
+  //Uint32 readerCoreId = DNUM;			//the core that is trying to read
+  //ASSERT(f->srcOrDst == FIFO_TYPE_SINGULAR ||
+  //	(f->srcOrDst == FIFO_TYPE_SRC) ||
+  //      readerCoreId == localCoreId);
+  //)
+#ifdef TS_FIFO_WAIT
+	SYS_TimeStamp_aliased(1115ULL);
+#endif
+
+  if (b->status != FIFO_BUFFER_FILLED) {
+      FIFO_waitWTC(f, b);
+  }
+#ifdef TS_FIFO_WAIT
+	SYS_TimeStamp_aliased(1116ULL);
+#endif
+  //At this point, we are ready to dish out the buffer for reading
+  //DEBUG(
+  //if (b->status != FIFO_BUFFER_FILLED) {
+  //  DEBUG(printf("ERROR: buffer still not marked filled after deducing writeDone\n"));
+  //  FIFO_error(FIFO_ERR_41);
+  //}
+  //)
+
+//  idxRead = (idxRead + 1) % nBuffers;
+  b->status = FIFO_BUFFER_BEING_READ;
+
+  return b;
+}
 
 static inline FIFO_BufferHandle FIFO_getNextReadBuffer(
 	FIFO_Handle restrict f, 
@@ -727,7 +770,16 @@ static inline FIFO_BufferHandle FIFO_getNextReWrIcBuffer_remote(
 }
 
 
-
+static inline void FIFO_readDone_peak(FIFO_Handle f, FIFO_BufferHandle b) {
+  //MEASURE_RUN_TIME(
+  //DEBUG(printf("FIFO_readDone\n"));
+  //ASSERT(b->status == FIFO_BUFFER_BEING_READ);
+  //Modifying this since we might declare read done on an already empty buffer
+  //due to bunching of the transfer completion case with the synchronous case.
+  ASSERT(b->status == FIFO_BUFFER_BEING_READ || b->status == FIFO_BUFFER_FILLED);
+  b->status = FIFO_BUFFER_FILLED;
+  //);
+}
 
 static inline void FIFO_readDone(FIFO_Handle f, FIFO_BufferHandle b) {
   //MEASURE_RUN_TIME(
