@@ -15,6 +15,8 @@ Author(s): Manu Bansal
 #define MYLOG(...) printf(__VA_ARGS__)
 #endif
 
+//allocate memory for storing timestamps only if timestamping is enabled
+#ifdef HAVETSCONF
 
 //#define N_TS 1000	//good for 10 wrap arounds of 10000 sample trace (max idx = 1500 or so)
 //#define N_TS 2000
@@ -22,6 +24,13 @@ Author(s): Manu Bansal
 #define N_TS 10000
 //#define N_TS 8000
 ////#define N_TS 12000
+
+#else
+
+#define N_TS 10
+
+#endif	//HAVETSCONF
+
 #define N_TS_INTO_2	(N_TS * 2)
 
 #define DEBUG_TS
