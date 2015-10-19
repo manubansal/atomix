@@ -96,6 +96,8 @@ struct udphdr {
 
 typedef struct udphdr NET_udphdr;
 
+typedef struct udp_packet NET_udp_packet;
+
 typedef struct {
   char bytes[1600] __attribute__((aligned(8)));
 } NET_t_MSS;
