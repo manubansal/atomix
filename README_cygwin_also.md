@@ -5,10 +5,12 @@ Atomix programming framework release (under development)
 
 ### Setting up required tools ###
 
-Install these packages on linux: 
+Install these packages on linux (or under cygwin):
 
 ```
-# sudo apt-get install autoconf automake libtool git make python python-networkx realpath
+# sudo apt-get install autoconf automake libtool git make python python-networkx #linux (or cygwin)
+# sudo apt-get install realpath	#linux only
+util-linux #cygwin only, for getopt (without the ‘s’)
 # sudo apt-get install vim (suggested)
 # cl6x #install TI Code Generation Tools (CGT) (ex. v7.2.4, or v7.3.3)
 ```
@@ -16,6 +18,8 @@ Install these packages on linux:
 Note: If you installed Code Composer Studio, CGT may have already been installed. If you can find the compiler command cl6x on your path (or in the CCS install folder hierarchy), you already have CGT. You can use that corresponding CGT root for rest of the steps and do not need to install CGT again.
 
 ### Get the source ###
+
+You can check out the source in your cygwin homefolder (ex. C:\cygwin\home\Manu Bansal)
 
 clone atomix with git: 
 
@@ -25,6 +29,7 @@ $ cd ~/workspace; git clone https://bitbucket.org/manub686/atomix.git (or simila
 clone tiextlibs: 
 
 $ cd ~/workspace; git clone https://github.com/manub686/tiextlibs
+
 
 
 ### Set up environment variables ###
@@ -40,12 +45,13 @@ note: when changing paths don't use home shortcut (e.g. ~/) but full paths (e.g.
 ########################################
 
 #---- USER SETUP START -----
-#modify according to your workspace path
-export ATOMIX_ROOT=/home/manub/workspace/atomix
-export EXTLIBS_ROOT=/home/manub/workspace/tiextlibs
+export ATOMIX_ROOT_LINUX_STYLE=/cygdrive/d/workspace/atomix
+export ATOMIX_ROOT="D:/workspace/atomix"
+export EXTLIBS_ROOT="D:/workspace/tiextlibs"
+export CCS_ROOT_WIN_STYLE="C:/ti/ccsv5"
+export CCS_ROOT=/cygdrive/c/ti/ccsv5
 
-#modify according to your CCS path and CGT version
-export CCS_ROOT=/opt/ti/ccsv6
+#modify according to your CGT version and location; keep the file name convention intact
 export CG_TOOL_ROOT=$CCS_ROOT/tools/compiler/c6000_7.4.1
 export CG_TOOL_ROOT_WIN="$CCS_ROOT_WIN_STYLE/tools/compiler/c6000_7.4.1"
 
@@ -54,20 +60,37 @@ export CSL_ROOT="$EXTLIBS_ROOT/pdk_C6670_1_1_2_5/packages"             #for 6670
 #---- USER SETUP END -----
 
 alias cygpath="_cygpath"
-export CCS_ROOT_WIN_STYLE=$CCS_ROOT
-export ATOMIX_ROOT_LINUX_STYLE=$ATOMIX_ROOT
+
 export DSPLIB_ROOT="$EXTLIBS_ROOT/dsplib_c66x_3_2_0_1"
 export IQMATH_ROOT="$EXTLIBS_ROOT/c64xplus-iqmath_2_01_04_00"
 export UNITY_ROOT="$EXTLIBS_ROOT/unity"
+
+export PDK_ROOT=/home/manub/workspace/tiextlibs/pdk_C6670_1_1_2_5/packages
 export ATOMIX_INSTALL_DIR=$ATOMIX_ROOT/build
-export PDK_ROOT=$CSL_ROOT
+export PLIB_INC_DIR=/home/manub/workspace/plib
+export PLIB_INSTALL_DIR=/home/manub/workspace/plib/build
+export ORILIB_INC_DIR=/home/manub/workspace/orilib
+export ORILIB_INSTALL_DIR=/home/manub/workspace/orilib/build
+
+#------------
+
+alias cygpath="_cygpath"
+
+
 export BUILD_UTILS_ROOT=$ATOMIX_ROOT_LINUX_STYLE/r2cmplr
 export PATH=$BUILD_UTILS_ROOT:"$CG_TOOL_ROOT/bin":$PATH
 export PATH=$PATH:$ATOMIX_ROOT_LINUX_STYLE/tracescripts
 export DEBUGSERVER_ROOT="$CCS_ROOT/ccs_base/DebugServer"
-#------------
 ########################################
+
+
 ```
+
+Note: On a linux system, path naming conventions are all uniform. You just fill in the same value for CG_TOOL_ROOT_WIN as you fill for CG_TOOL_ROOT.
+
+Note: On a cygwin system, compiling within a soft link to the source directory may cause problems.
+
+
 
 do some one-time bootstrapping:
 
