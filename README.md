@@ -71,9 +71,10 @@ export DEBUGSERVER_ROOT="$CCS_ROOT/ccs_base/DebugServer"
 
 do some one-time bootstrapping:
 
+```
 $ cd <path_to>/tiextlibs
 $ make install
-$ make twiddles		#only if you are using orilib
+```
 
 
 
