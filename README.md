@@ -5,21 +5,15 @@ Atomix programming framework release (under development)
 
 ### Setting up required tools ###
 
-Install these packages on linux or under cygwin:
+Install these packages on linux (or under cygwin):
 
-* autoconf
-* automake
-* libtool
-* svn
-* git
-* [cygwin only] util-linux (for getopt (without the ‘s’))
-* make (not gmake or other)
-* vim (suggested)
-* [Linux-only] realpath
-* python
-* python-networkx
-* Install TI Code Generation Tools (CGT) (ex. v7.2.4, or v7.3.3)
-* Optional. [Windows only] Install TortoiseSVN client.
+```
+# sudo apt-get install autoconf automake libtool git make python python-networkx #linux (or cygwin)
+# sudo apt-get install realpath	#linux only
+util-linux #cygwin only, for getopt (without the ‘s’)
+# sudo apt-get install vim (suggested)
+# cl6x #install TI Code Generation Tools (CGT) (ex. v7.2.4, or v7.3.3)
+```
 
 Note: If you installed Code Composer Studio, CGT may have already been installed. If you can find the compiler command cl6x on your path (or in the CCS install folder hierarchy), you already have CGT. You can use that corresponding CGT root for rest of the steps and do not need to install CGT again.
 
