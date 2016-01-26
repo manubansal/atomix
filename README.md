@@ -42,23 +42,20 @@ note: when changing paths don't use home shortcut (e.g. ~/) but full paths (e.g.
 #---- USER SETUP START -----
 #modify according to your workspace path
 export ATOMIX_ROOT=/home/manub/workspace/atomix
-export EXTLIBS_ROOT=/home/manub/workspace/tiextlibs
+export TIEXTLIBS_ROOT=/home/manub/workspace/tiextlibs
 
 #modify according to your CCS path and CGT version
 export CCS_ROOT=/opt/ti/ccsv6
 export CG_TOOL_ROOT=$CCS_ROOT/tools/compiler/c6000_7.4.1
 
-#export CSL_ROOT="$EXTLIBS_ROOT/csl_tci6616_1.0.0.21/packages"           #for 6618
-export CSL_ROOT="$EXTLIBS_ROOT/pdk_C6670_1_1_2_5/packages"             #for 6670
+#export CSL_ROOT="$TIEXTLIBS_ROOT/csl_tci6616_1.0.0.21/packages"           #for 6618
+export CSL_ROOT="$TIEXTLIBS_ROOT/pdk_C6670_1_1_2_5/packages"             #for 6670
 #---- USER SETUP END -----
 
 alias cygpath="_cygpath"
 export CCS_ROOT_WIN_STYLE=$CCS_ROOT
 export CG_TOOL_ROOT_WIN=$CG_TOOL_ROOT
 export ATOMIX_ROOT_LINUX_STYLE=$ATOMIX_ROOT
-export DSPLIB_ROOT="$EXTLIBS_ROOT/dsplib_c66x_3_2_0_1"
-export IQMATH_ROOT="$EXTLIBS_ROOT/c64xplus-iqmath_2_01_04_00"
-export UNITY_ROOT="$EXTLIBS_ROOT/unity"
 export ATOMIX_INSTALL_DIR=$ATOMIX_ROOT/build
 export PDK_ROOT=$CSL_ROOT
 export BUILD_UTILS_ROOT=$ATOMIX_ROOT_LINUX_STYLE/r2cmplr
