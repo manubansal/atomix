@@ -145,18 +145,34 @@ Build libraries:
 $ cd ~/atomix/build; make
 
 
-Build wifirx54 application (make twice, ignore link errors thrown after first make):
-
-$ cd ~/atomix/build; make wifi54; make wifi54
 
 
-Check if app_wifirx54.*.out was built:
+## Configuration parameters (for custom build) ##
 
-$ cd ~/atomix/build; ls app/wifi54/*.out   #will include app_wifi54.*.out if the build was successful
+inptracemode:
+
+inptracemode=s or inptracemode=small tells the compiler that a small trace file will be compiled in as the source of samples; the compiler includes the sample trace in the source code for fastest access through SRAM at the cost of space in the L2_TEXT section. This is the default and the easiest mode to get started for small traces.
+
+inptracemode=lc or inptracemode=large-compiled tells the cimpiler that a large trace file will be compiled in as the source of samples; the compiler places the samples in DDR RAM, so it does not add to L2_TEXT budget in SRAM; sample access performance is slower than performance with inptracemode=s. This mode is useful for functional debugging for a large number of repetitions of the signal processing chain.
+
+inptracemode=lm or inptracemode=large-manloaded tells the compiler that the trace large, and it will be loaded into the DDR memory manually, so it should not be compiled in; this is useful if you are working with big test traces and want to cycle through different traces quickly; since you will manually load the traces, the source program is loaded onto the DSPs only once and you can keep changing the test samples, instead of reloading the entire source code every time you change the sample trace. This option is useful for regression testing at later stages of the development process.
+
+memconf: TBD
+
+snrber: TBD
+
+samplesource: eth | trace
+
+host: evm6474 | [nyquist] | evm6670 | 6638k2k
+
+memconf: TBD ([memconf1])
+
+tsconf: TBD
+
+debug: [0] | 1 | 2 | 3 | 4  Higher value prints out more, consumes more program memory, runs slower.
 
 
-
-### Set up VIM syntax highlighting ###
+### Set up VIM syntax highlighting (optional) ###
 
 Before looking at the examples, you may want to set up VIM syntax highlighting. It makes the code more readable.
 
@@ -179,7 +195,7 @@ Atomix source files should be named with extension .or for syntax highlighting
 
 ## Hello World! ##
 
-Clone axhello, then:
+Clone axhello from https://github.com/manub686/axhello.git, then:
 
 $ cd axhello
 $ mkdir build; cd build
@@ -226,4 +242,6 @@ Note that this target configuration launch sequence of steps is picked so that C
 In case you ended up firing CCS build process and therefore ended up with a Debug or a Release folder, make sure you don’t commit it into the repository. You can safely remove and following the instructions above to run and debug even if you ended up with CCS trying to build.
 
 ---
+
+
 
