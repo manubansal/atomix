@@ -147,7 +147,7 @@ $ cd ~/atomix/build; make
 
 
 
-## Configuration parameters (for custom build) ##
+### Configuration parameters (for custom build) ###
 
 inptracemode:
 
