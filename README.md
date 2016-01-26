@@ -94,7 +94,7 @@ $ cd atomix; mkdir build
 
 Set up the build configuration:
 
-$ cd ~/atomix/build; ../_configure tsconf=none debug=2 memconf=memconf1 inptracemode=lc snrber=yes  #representative settings -- pick your own values for flags
+$ cd ~/atomix/build; ../_configure
 
 
 Build libraries:
@@ -105,6 +105,10 @@ $ cd ~/atomix/build; make
 
 
 ### Configuration parameters (for custom build) ###
+
+Example custom configuration:
+
+ ../_configure tsconf=none debug=2 memconf=memconf1 inptracemode=lc snrber=yes  #representative settings -- pick your own values for flags
 
 inptracemode:
 
