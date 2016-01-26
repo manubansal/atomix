@@ -47,7 +47,6 @@ export EXTLIBS_ROOT=/home/manub/workspace/tiextlibs
 #modify according to your CCS path and CGT version
 export CCS_ROOT=/opt/ti/ccsv6
 export CG_TOOL_ROOT=$CCS_ROOT/tools/compiler/c6000_7.4.1
-export CG_TOOL_ROOT_WIN="$CCS_ROOT_WIN_STYLE/tools/compiler/c6000_7.4.1"
 
 #export CSL_ROOT="$EXTLIBS_ROOT/csl_tci6616_1.0.0.21/packages"           #for 6618
 export CSL_ROOT="$EXTLIBS_ROOT/pdk_C6670_1_1_2_5/packages"             #for 6670
@@ -55,6 +54,7 @@ export CSL_ROOT="$EXTLIBS_ROOT/pdk_C6670_1_1_2_5/packages"             #for 6670
 
 alias cygpath="_cygpath"
 export CCS_ROOT_WIN_STYLE=$CCS_ROOT
+export CG_TOOL_ROOT_WIN=$CG_TOOL_ROOT
 export ATOMIX_ROOT_LINUX_STYLE=$ATOMIX_ROOT
 export DSPLIB_ROOT="$EXTLIBS_ROOT/dsplib_c66x_3_2_0_1"
 export IQMATH_ROOT="$EXTLIBS_ROOT/c64xplus-iqmath_2_01_04_00"
