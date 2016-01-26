@@ -1,0 +1,12 @@
+
+(Note: If you are using r1cmplr, you will also need to obtain lgextlibs.)
+
+########################################
+#### for r1cmplr (optional)
+########################################
+export CPLEX_PATH="/home/manub/workspace/lgextlibs/cplex/cplex/bin/x86-64_sles10_4.1"
+export PATH=$PATH:$ATOMIX_ROOT_LINUX_STYLE/tirunutils:$CPLEX_PATH
+export PYTHONPATH=$PYTHONPATH:$BUILD_UTILS_ROOT:.
+########################################
+
+export BUILD_UTILS_ROOT=$BUILD_UTILS_ROOT:$ATOMIX_ROOT_LINUX_STYLE/r1cmplr

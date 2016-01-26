@@ -36,7 +36,6 @@ clone tiextlibs:
 
 $ cd ~/workspace; git clone https://github.com/manub686/tiextlibs
 
-(Note: If you are using r1cmplr, you will also need to obtain lgextlibs.)
 
 
 ### Set up environment variables ###
@@ -84,28 +83,14 @@ export ORILIB_INSTALL_DIR=/home/manub/workspace/orilib/build
 alias cygpath="_cygpath"
 
 
-export BUILD_UTILS_ROOT=$ATOMIX_ROOT_LINUX_STYLE/r2cmplr:$ATOMIX_ROOT_LINUX_STYLE/r1cmplr
+export BUILD_UTILS_ROOT=$ATOMIX_ROOT_LINUX_STYLE/r2cmplr
 export PATH=$BUILD_UTILS_ROOT:"$CG_TOOL_ROOT/bin":$PATH
 export PATH=$PATH:$ATOMIX_ROOT_LINUX_STYLE/tracescripts
 export DEBUGSERVER_ROOT="$CCS_ROOT/ccs_base/DebugServer"
 ########################################
 
-########################################
-#### for r1cmplr (optional)
-########################################
-export CPLEX_PATH="/home/manub/workspace/lgextlibs/cplex/cplex/bin/x86-64_sles10_4.1"
-export PATH=$PATH:$ATOMIX_ROOT_LINUX_STYLE/tirunutils:$CPLEX_PATH
-export PYTHONPATH=$PYTHONPATH:$BUILD_UTILS_ROOT:.
-########################################
 
-########################################
-#### for wifibb (optional)
-########################################
-export WIFIBB=/home/manub/workspace/wifibb
-export WIFIBB_TRACES=/home/manub/workspace/wifibb-traces
-export WIFIRX54MC_TRACE_DIR=$WIFIBB_TRACES/bdata
-########################################
-```
+``
 
 Note: On a linux system, path naming conventions are all uniform. You just fill in the same value for CG_TOOL_ROOT_WIN as you fill for CG_TOOL_ROOT.
 
