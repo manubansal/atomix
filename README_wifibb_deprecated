@@ -5,4 +5,3 @@ export WIFIBB=/home/manub/workspace/wifibb
 export WIFIBB_TRACES=/home/manub/workspace/wifibb-traces
 export WIFIRX54MC_TRACE_DIR=$WIFIBB_TRACES/bdata
 ########################################
-`

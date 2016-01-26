@@ -90,7 +90,7 @@ export DEBUGSERVER_ROOT="$CCS_ROOT/ccs_base/DebugServer"
 ########################################
 
 
-``
+```
 
 Note: On a linux system, path naming conventions are all uniform. You just fill in the same value for CG_TOOL_ROOT_WIN as you fill for CG_TOOL_ROOT.
 
