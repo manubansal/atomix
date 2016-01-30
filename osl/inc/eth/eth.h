@@ -7,6 +7,7 @@ Author(s): Manu Bansal
 #ifndef ETH_H
 #define ETH_H
 
+#include <osl/inc/swpform.h>
 
 #define VITA_HDR_LEN 4
 #define VITA_TRL_LEN 4
@@ -61,7 +62,8 @@ struct ip_packet {
 	struct {
 		uchar dst_eth[ETH_SIZE];
 		uchar src_eth[ETH_SIZE];
-		uchar __unknwn[2];
+		//uchar ether_type[2];
+		Uint16 ether_type;
 	} hw_header;             /* hardware header */
     uint header_len:4;       /* header length in words in 32bit words */
     uint version:4;          /* 4-bit version */
