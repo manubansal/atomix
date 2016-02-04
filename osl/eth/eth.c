@@ -328,7 +328,27 @@ int32_t eth_send(uint8_t* payload, uint32_t payload_len) //{{{
 
 	Cppi_setPacketLen (Cppi_DescType_HOST, (Cppi_Desc *)pCppiDesc, payload_len);
 	
-	Cppi_setPSFlags(Cppi_DescType_HOST, (Cppi_Desc *)pCppiDesc, 0);
+	//WARNING: ALE causes a severe performance drop in packet transmit rate
+	//Ref: https://e2e.ti.com/support/dsp/c6000_multi-core_dsps/f/639/t/397066
+
+	//Lookup ALE to decide outgoing port on on-board switch, add CRC
+	//Cppi_setPSFlags(Cppi_DescType_HOST, (Cppi_Desc *)pCppiDesc, 0);
+
+	//Skip ALE, send out eth port 1 on on-board switch, add CRC
+	//Cppi_setPSFlags(Cppi_DescType_HOST, (Cppi_Desc *)pCppiDesc, 1);
+
+	//Skip ALE, send out eth port 2 on on-board switch, add CRC
+	Cppi_setPSFlags(Cppi_DescType_HOST, (Cppi_Desc *)pCppiDesc, 2);	
+
+	//Use ALE, skip CRC
+	//Cppi_setPSFlags(Cppi_DescType_HOST, (Cppi_Desc *)pCppiDesc, 8);
+
+	//Skip ALE, send out eth port 1 on on-board switch, skip CRC
+	//Cppi_setPSFlags(Cppi_DescType_HOST, (Cppi_Desc *)pCppiDesc, 9);
+
+	//Skip ALE, send out eth port 2 on on-board switch, skip CRC
+	//Cppi_setPSFlags(Cppi_DescType_HOST, (Cppi_Desc *)pCppiDesc, 10);
+
 
 	/* Send the packet out the mac */
 	Qmss_queuePush (gPaTxQHnd[8], pCppiDesc, payload_len, SIZE_HOST_DESC, Qmss_Location_TAIL);
