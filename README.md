@@ -158,12 +158,7 @@ Atomix source files should be named with extension .or for syntax highlighting
 
 ## Hello World! ##
 
-Clone axhello from https://github.com/manubansal/axhello.git, then:
-
-$ cd axhello
-$ mkdir build; cd build
-$ ../_configure
-$ make helloworld
+Clone axhello from https://github.com/manubansal/axhello.git, then follow the contained instructions to build helloworld applications.
 
 ---
 
