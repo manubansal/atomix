@@ -8,8 +8,13 @@ Atomix programming framework release (under development)
 Install these packages on linux: 
 
 ```
-# sudo apt-get install autoconf automake libtool git make python python-networkx realpath
-# sudo apt-get install vim (suggested)
+# Build system support
+# sudo apt-get install autoconf automake libtool git make python python-networkx realpath python-matplotlib python-pip vim
+
+# python sqlite3 upgrade
+# sudo pip uninstall pysqlite; sudo apt-get install libsqlite3-dev; sudo pip install pysqlite
+
+# TI's C compiler
 # cl6x #install TI Code Generation Tools (CGT) (ex. v7.2.4, or v7.3.3)
 ```
 

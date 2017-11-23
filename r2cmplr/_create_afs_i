@@ -1926,7 +1926,7 @@ if __name__ == "__main__":
   logger.info('invoking planex compiler')
 
   v_sqlite3 = '3.6.19'
-  if (sqlite3.sqlite_version.split(".") < v_sqlite3.split(".")):
+  if ([int(v) for v in sqlite3.sqlite_version.split(".")] < [int(v) for v in v_sqlite3.split(".")]):
     print_line()
     logger.error('sqlite3 version needs to be >= %s' % v_sqlite3)
     print_line()
