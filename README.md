@@ -19,12 +19,12 @@ Note: If you installed Code Composer Studio, CGT may have already been installed
 
 clone atomix with git: 
 
-$ cd ~/workspace; git clone https://bitbucket.org/manub686/atomix.git (or similar)
+$ cd ~/workspace; git clone https://bitbucket.org/manubansal/atomix.git (or similar)
 
 
 clone tiextlibs: 
 
-$ cd ~/workspace; git clone https://github.com/manub686/tiextlibs
+$ cd ~/workspace; git clone https://github.com/manubansal/tiextlibs
 
 
 ### Set up environment variables ###
@@ -46,7 +46,7 @@ export TIEXTLIBS_ROOT=/home/manub/workspace/tiextlibs
 
 #modify according to your CCS path and CGT version
 export CCS_ROOT=/opt/ti/ccsv6
-export CG_TOOL_ROOT=$CCS_ROOT/tools/compiler/c6000_7.4.1
+export CG_TOOL_ROOT=$CCS_ROOT/tools/compiler/c6000_7.4.1	#cl6x should be in $CG_TOOL_ROOT/bin
 
 #export CSL_ROOT="$TIEXTLIBS_ROOT/csl_tci6616_1.0.0.21/packages"           #for 6618
 export CSL_ROOT="$TIEXTLIBS_ROOT/pdk_C6670_1_1_2_5/packages"             #for 6670
@@ -153,7 +153,7 @@ Atomix source files should be named with extension .or for syntax highlighting
 
 ## Hello World! ##
 
-Clone axhello from https://github.com/manub686/axhello.git, then:
+Clone axhello from https://github.com/manubansal/axhello.git, then:
 
 $ cd axhello
 $ mkdir build; cd build
