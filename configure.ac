@@ -86,10 +86,11 @@ AC_SUBST([TIMESTAMPCONF])
 
 AS_CASE([$host],
 
-       [evm6474], [HOST=evm6474],
-       [nyquist], [HOST=nyquist],
-       [evm6670], [HOST=evm6670],
-       [6638k2k], [HOST=6638k2k],
+       [evm6474],  [HOST=evm6474],
+       [nyquist],  [HOST=nyquist],
+       [evm6670],  [HOST=evm6670],
+       [6638k2k],  [HOST=6638k2k],
+       [66ak2h14], [HOST=66ak2h14],
        [HOST=nyquist],
 #       AC_MSG_ERROR([Unknown host platform --host=$host])
      )
