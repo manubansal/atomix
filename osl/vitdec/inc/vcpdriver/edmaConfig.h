@@ -12,8 +12,11 @@ Author(s): Manu Bansal
 #include <ti/csl/csl_vcp2Aux.h>
 #include <ti/csl/csl_tsc.h>
 #include <ti/csl/csl_edma3.h>
-#ifdef DEVICE_K2K
+#if defined(DEVICE_K2K) && defined(HOST_6638k2k)
 #include <ti/csl/device/k2k/src/csl_device_interrupt.h>
+#endif
+#if defined(DEVICE_K2K) && defined(HOST_66ak2h14)
+#include <ti/csl/csl_device_interrupt.h>
 #endif
 /* EDMA frame size */
 #define VCPDRV_DMA_BURST_SIZE  128
