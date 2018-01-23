@@ -110,29 +110,37 @@ $ cd ~/atomix/build; make
 
 Example custom configuration:
 
+```
  ../_configure tsconf=none debug=2 memconf=memconf1 inptracemode=lc snrber=yes  #representative settings -- pick your own values for flags
+```
 
-inptracemode:
+#### Target board specification
 
-inptracemode=s or inptracemode=small tells the compiler that a small trace file will be compiled in as the source of samples; the compiler includes the sample trace in the source code for fastest access through SRAM at the cost of space in the L2_TEXT section. This is the default and the easiest mode to get started for small traces.
+host: evm6474 | [nyquist] | evm6670 | 6638k2k | 66ak2h14
 
-inptracemode=lc or inptracemode=large-compiled tells the cimpiler that a large trace file will be compiled in as the source of samples; the compiler places the samples in DDR RAM, so it does not add to L2_TEXT budget in SRAM; sample access performance is slower than performance with inptracemode=s. This mode is useful for functional debugging for a large number of repetitions of the signal processing chain.
+Pass an option like `host=nyquist` in the _configure command line.
 
-inptracemode=lm or inptracemode=large-manloaded tells the compiler that the trace large, and it will be loaded into the DDR memory manually, so it should not be compiled in; this is useful if you are working with big test traces and want to cycle through different traces quickly; since you will manually load the traces, the source program is loaded onto the DSPs only once and you can keep changing the test samples, instead of reloading the entire source code every time you change the sample trace. This option is useful for regression testing at later stages of the development process.
-
-memconf: TBD
-
-snrber: TBD
-
-samplesource: eth | trace
-
-host: evm6474 | [nyquist] | evm6670 | 6638k2k
+#### Memory configuration
 
 memconf: TBD ([memconf1])
 
+#### Timestamp configuration
+
 tsconf: TBD
 
+#### Debug level configuration
+
 debug: [0] | 1 | 2 | 3 | 4  Higher value prints out more, consumes more program memory, runs slower.
+
+#### Ethernet driver build
+
+By default, an ethernet driver included as part of OSL (support library) is
+built as a library.  This is needed for evm6474, nyquist, and evm6670. Some
+newer boards like 6638k2k and 66ak2h14 do not need this ethernet driver library
+as the assisting PDK already includes one. For those boards, trying to build
+the included driver will cause the build to fail. The ethernet driver library
+will need to be disabled from atomix build using a command line flag of
+`--disable-osleth` or, equivalently, `--enable-osleth=no`.
 
 
 ### Set up VIM syntax highlighting (optional) ###

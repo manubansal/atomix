@@ -96,6 +96,17 @@ AS_CASE([$host],
      )
 AC_SUBST([HOST])
 
+
+AC_ARG_ENABLE(osleth,
+[  --enable-osleth    Turn on osl ethernet build],
+[case "${enableval}" in
+  yes) osleth=true ;;
+  no)  osleth=false ;;
+  *) AC_MSG_ERROR(bad value ${enableval} for --enable-osleth) ;;
+esac],[osleth=false])
+AM_CONDITIONAL(OSLETH, test x$osleth = xtrue)
+
+
 AM_CONDITIONAL([DEVICE_IS_6638K2K], [test x$HOST = x6638k2k])
 #AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 #AM_INIT_AUTOMAKE([-Wall foreign subdir-objects])

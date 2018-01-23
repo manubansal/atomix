@@ -29,7 +29,7 @@ lib_osl_vitdec_a_SOURCES = \
    vitdec/src/vitdec/vitdec_profile.c
 
 #osl ethernet library
-if !DEVICE_IS_6638K2K
+if OSLETH
 noinst_LIBRARIES += lib.osl.eth.a	#GNU naming convention
 lib_osl_eth_a_SOURCES = \
 	eth/cppi_device.c \
